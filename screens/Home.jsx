@@ -43,7 +43,7 @@ export default function Home() {
     },
     {
       id: '4',
-      title: 'Country Cottage',
+      title: ' Cottage',
       location: 'Texas',
       details: '3 Beds • 2 Baths • 1500 sqft',
       image:
@@ -100,7 +100,7 @@ export default function Home() {
               <Text style={styles.propertyDetails}>{item.details}</Text>
               <TouchableOpacity
                 style={styles.seeButton}
-                onPress={() => alert(`See details for ${item.title}`)}
+                onPress={() => navigation.navigate('PropertyDetails', {property: item})}
               >
                 <Text style={styles.seeButtonText}>See</Text>
               </TouchableOpacity>

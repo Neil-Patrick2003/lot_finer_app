@@ -12,6 +12,7 @@ import Home from './screens/Home';
 import Freind from './screens/Freind';
 import NewScreen from './screens/NewScreen';
 import Tripping from './screens/Tripping';
+import PropertyDetails from './screens/Properties/PropertyDetails';
 
 const RootStack = createNativeStackNavigator();
 const Stack = createNativeStackNavigator();
@@ -23,6 +24,8 @@ const HomeNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="TabNavigator" component={TabNavigator} />
     <Stack.Screen name="NewScreen" component={NewScreen} />
+    <Stack.Screen name="PropertyDetails" component={PropertyDetails} />
+
   </Stack.Navigator>
 );
 
