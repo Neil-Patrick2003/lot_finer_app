@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   FlatList,
-  Image,  // <-- Import Image here
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Dimensions } from 'react-native';
@@ -22,32 +22,28 @@ export default function Home() {
       title: 'Modern Villa',
       location: 'LA',
       details: '4 Beds • 3 Baths • 2500 sqft',
-      image:
-        'https://images.unsplash.com/photo-1560448070-4561d88d83e4?auto=format&fit=crop&w=400&q=80',
+      image: 'https://images.unsplash.com/photo-1560448070-4561d88d83e4?auto=format&fit=crop&w=400&q=80',
     },
     {
       id: '2',
       title: 'City Apartment',
       location: 'NY',
       details: '2 Beds • 2 Baths • 1200 sqft',
-      image:
-        'https://images.unsplash.com/photo-1572120360610-d971b9b8f27f?auto=format&fit=crop&w=400&q=80',
+      image: 'https://images.unsplash.com/photo-1572120360610-d971b9b8f27f?auto=format&fit=crop&w=400&q=80',
     },
     {
       id: '3',
       title: 'Beach House',
       location: 'Miami',
       details: '3 Beds • 2 Baths • 1800 sqft',
-      image:
-        'https://images.unsplash.com/photo-1501183638714-4e0ab6f969c9?auto=format&fit=crop&w=400&q=80',
+      image: 'https://images.unsplash.com/photo-1501183638714-4e0ab6f969c9?auto=format&fit=crop&w=400&q=80',
     },
     {
       id: '4',
-      title: ' Cottage',
+      title: 'Cottage',
       location: 'Texas',
       details: '3 Beds • 2 Baths • 1500 sqft',
-      image:
-        'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=400&q=80',
+      image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=400&q=80',
     },
   ];
 
@@ -56,9 +52,7 @@ export default function Home() {
       {/* Header */}
       <View style={styles.headingContainer}>
         <Text style={styles.heading}>Agent Dashboard</Text>
-        <Text style={styles.subheading}>
-          Welcome back, Agent. Manage your listings below.
-        </Text>
+        <Text style={styles.subheading}>Welcome back, Agent. Manage your listings below.</Text>
       </View>
 
       {/* Analytics Summary */}
@@ -100,7 +94,7 @@ export default function Home() {
               <Text style={styles.propertyDetails}>{item.details}</Text>
               <TouchableOpacity
                 style={styles.seeButton}
-                onPress={() => navigation.navigate('PropertyDetails', {property: item})}
+                onPress={() => navigation.navigate('PropertyDetails', { property: item })}
               >
                 <Text style={styles.seeButtonText}>See</Text>
               </TouchableOpacity>
@@ -125,7 +119,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f6f6f6',
   },
   headingContainer: {
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#5B7931', // Main color
     padding: 24,
     borderRadius: 16,
     margin: 12,
@@ -158,7 +152,7 @@ const styles = StyleSheet.create({
   analyticsValue: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#2ecc71',
+    color: '#5B7931', // Main color
   },
   analyticsLabel: {
     fontSize: 14,
@@ -167,7 +161,7 @@ const styles = StyleSheet.create({
   },
   newPropsContainer: {
     marginVertical: 16,
-    paddingBottom: 2
+    paddingBottom: 2,
   },
   newPropsHeader: {
     flexDirection: 'row',
@@ -178,7 +172,7 @@ const styles = StyleSheet.create({
   },
   seeAll: {
     fontSize: 14,
-    color: '#3498db',
+    color: '#E5BC2B', // Highlight color
     fontWeight: 'bold',
   },
   propertyCard: {
@@ -213,7 +207,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   seeButton: {
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#5B7931', // Main color
     paddingVertical: 6,
     borderRadius: 8,
     alignItems: 'center',
