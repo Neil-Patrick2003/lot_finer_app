@@ -65,7 +65,7 @@ export default function Tripping() {
                     <Text style={styles.buttonText}>Decline</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.viewButton} onPress={() => handleViewProperty(item)}>
-                    <Text style={styles.buttonText}>View Property</Text>
+                    <Text style={styles.buttonText}>View</Text>
                 </TouchableOpacity>
             </View>
         </View>
