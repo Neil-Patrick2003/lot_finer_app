@@ -1,13 +1,70 @@
+import axios from 'axios';
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+  if (!email || !password) {
+    Alert.alert('Validation Error', 'Email and password are required.');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const response = await axios.post(
+      'http://192.168.254.106:8000/api/sanctum/token',
+      {
+        email,
+        password,
+        device_name: 'mobile', // required by Laravel Sanctum
+      },
+      {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const token = response.data.token;
+
+    // Save token in AsyncStorage
+    await AsyncStorage.setItem('authToken', token);
+
+    // Set default axios header
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+    Alert.alert('Login Successful');
     navigation.replace('MainApp');
-  };
+
+  } catch (error) {
+    console.error(error);
+    Alert.alert(
+      'Login Failed',
+      error.response?.data?.message || 'Something went wrong.'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   return (
     <KeyboardAvoidingView
@@ -36,8 +93,12 @@ export default function Login({ navigation }) {
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Text style={styles.loginText}>Login</Text>
+      <TouchableOpacity
+        style={[styles.loginButton, loading && { opacity: 0.6 }]}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        <Text style={styles.loginText}>{loading ? 'Logging in...' : 'Login'}</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );

@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import Entypo from '@expo/vector-icons/Entypo';
+import CustomDrawerContent from './components/CustomDrawerContent';
 
 // Screens
 import Login from './screens/Login';
@@ -14,6 +15,13 @@ import NewScreen from './screens/NewScreen';
 import Tripping from './screens/Tripping';
 import PropertyDetails from './screens/Properties/PropertyDetails';
 import Handle from './screens/Handle'; // Import the new Handle screen
+
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { ActivityIndicator, View } from 'react-native';
+
 
 const RootStack = createNativeStackNavigator();
 const Stack = createNativeStackNavigator();
@@ -76,22 +84,55 @@ const TabNavigator = () => (
 );
 
 const MainAppNavigator = () => (
-  <Drawer.Navigator screenOptions={{ headerShown: true }}>
+  <Drawer.Navigator
+    screenOptions={{ headerShown: true }}
+    drawerContent={(props) => <CustomDrawerContent {...props} />} // ⬅️ Use custom drawer
+  >
     <Drawer.Screen name="Home" component={HomeNavigator} />
-    {/* You can add more screens to the drawer here */}
+    {/* Add more drawer screens if needed */}
   </Drawer.Navigator>
 );
 
 export default function App() {
+  const [initialRoute, setInitialRoute] = useState(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (token) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          setInitialRoute('MainApp');
+        } else {
+          setInitialRoute('Login');
+        }
+      } catch (err) {
+        console.error('Error checking auth token', err);
+        setInitialRoute('Login');
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  if (!initialRoute) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#5B7931" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
         <RootStack.Screen name="Login" component={Login} />
         <RootStack.Screen name="MainApp" component={MainAppNavigator} />
       </RootStack.Navigator>
     </NavigationContainer>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
