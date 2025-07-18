@@ -20,22 +20,7 @@ export default function Home() {
   const [userName, setUserName] = useState('');
   const [newProperties, setNewProperties] = useState([]);
 
-  // Logout Function
-  const handleLogout = async () => {
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (token) {
-        await axios.post('http://192.168.254.106:8000/api/logout', {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-
-      await AsyncStorage.removeItem('authToken');
-      navigation.replace('Login'); // Make sure 'Login' screen is in your navigator
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  
 
   // Load token and fetch user info + properties
   useEffect(() => {

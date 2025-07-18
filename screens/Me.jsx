@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import axios from 'axios';
 
 export default function Me() {
   const navigation = useNavigation();
+  const [userName, setUserName] = useState('');
 
   const accountStats = [
     { label: 'Active Listings', value: '23' },
@@ -28,6 +29,28 @@ export default function Me() {
     { id: '4', title: 'Notifications', action: () => navigation.navigate('Notifications') },
     { id: '5', title: 'Privacy Policy', action: () => navigation.navigate('Privacy') },
   ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (token) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+          // Fetch authenticated user
+          const userRes = await axios.get('http://192.168.254.106:8000/api/user');
+          setUserName(userRes.data.name);
+
+          // Fetch properties
+     
+        }
+      } catch (error) {
+        console.error('Error loading user or properties:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
 
   const handleLogout = () => {
     Alert.alert(
@@ -77,7 +100,7 @@ export default function Me() {
             style={styles.profileImage}
           />
         </View>
-        <Text style={styles.userName}>John Matthew Perez</Text>
+        <Text style={styles.userName}>{userName || 'Agent'}</Text>
         <Text style={styles.userEmail}>22-71596@g.batstate-u.edu.ph</Text>
         <Text style={styles.membershipBadge}>Agent</Text>
       </View>
