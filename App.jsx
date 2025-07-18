@@ -10,7 +10,7 @@ import CustomDrawerContent from './components/CustomDrawerContent';
 // Screens
 import Login from './screens/Login';
 import Home from './screens/Home';
-import Freind from './screens/Freind';
+import Me from './screens/Me';
 import NewScreen from './screens/NewScreen';
 import Tripping from './screens/Tripping';
 import PropertyDetails from './screens/Properties/PropertyDetails';
@@ -72,8 +72,8 @@ const TabNavigator = () => (
       }}
     />
     <Tab.Screen
-      name="Freind"
-      component={Freind}
+      name="Me"
+      component={Me}
       options={{
         tabBarIcon: ({ color, size }) => (
           <Entypo name="user" size={size} color={color} />
