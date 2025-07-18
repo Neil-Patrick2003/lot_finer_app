@@ -9,6 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 export default function Me() {
   const navigation = useNavigation();
@@ -33,7 +35,32 @@ export default function Me() {
       'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: () => console.log('Logout pressed') },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('authToken');
+              if (token) {
+                await axios.post(
+                  'http://192.168.254.106:8000/api/logout',
+                  {},
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                      Accept: 'application/json',
+                    },
+                  }
+                );
+              }
+              await AsyncStorage.removeItem('authToken');
+              navigation.replace('Login');
+            } catch (error) {
+              console.error('Logout failed:', error);
+              Alert.alert('Logout Failed', 'Please try again.');
+            }
+          },
+        },
       ]
     );
   };
@@ -45,7 +72,7 @@ export default function Me() {
         <View style={styles.profileImageContainer}>
           <Image
             source={{
-              uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'
+              uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
             }}
             style={styles.profileImage}
           />
@@ -60,10 +87,13 @@ export default function Me() {
         <Text style={styles.sectionTitle}>Overview</Text>
         <View style={styles.statsContainer}>
           {accountStats.map((stat, index) => (
-            <View key={index} style={[
-              styles.statCard,
-              index < accountStats.length - 1 && styles.statCardBorder
-            ]}>
+            <View
+              key={index}
+              style={[
+                styles.statCard,
+                index < accountStats.length - 1 && styles.statCardBorder,
+              ]}
+            >
               <Text style={styles.statValue}>{stat.value}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
             </View>
@@ -80,7 +110,7 @@ export default function Me() {
               key={item.id}
               style={[
                 styles.menuItem,
-                index === menuItems.length - 1 && styles.lastMenuItem
+                index === menuItems.length - 1 && styles.lastMenuItem,
               ]}
               onPress={item.action}
               activeOpacity={0.7}
@@ -122,8 +152,8 @@ export default function Me() {
 
       {/* Sign Out Button */}
       <View style={styles.signOutSection}>
-        <TouchableOpacity 
-          style={styles.signOutButton} 
+        <TouchableOpacity
+          style={styles.signOutButton}
           onPress={handleLogout}
           activeOpacity={0.7}
         >
@@ -138,6 +168,7 @@ export default function Me() {
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
