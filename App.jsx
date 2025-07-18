@@ -9,7 +9,7 @@ import Entypo from '@expo/vector-icons/Entypo';
 // Screens
 import Login from './screens/Login';
 import Home from './screens/Home';
-import Freind from './screens/Freind';
+import Me from './screens/Me';
 import NewScreen from './screens/NewScreen';
 import Tripping from './screens/Tripping';
 import PropertyDetails from './screens/Properties/PropertyDetails';
@@ -64,8 +64,8 @@ const TabNavigator = () => (
       }}
     />
     <Tab.Screen
-      name="Freind"
-      component={Freind}
+      name="Me"
+      component={Me}
       options={{
         tabBarIcon: ({ color, size }) => (
           <Entypo name="user" size={size} color={color} />
@@ -81,6 +81,7 @@ const MainAppNavigator = () => (
     {/* You can add more screens to the drawer here */}
   </Drawer.Navigator>
 );
+
 
 export default function App() {
   return (
