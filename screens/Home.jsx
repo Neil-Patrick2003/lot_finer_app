@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,50 +6,60 @@ import {
   TouchableOpacity,
   ScrollView,
   FlatList,
-  Image,  // <-- Import Image here
+  Image,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Dimensions } from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
 export default function Home() {
   const navigation = useNavigation();
+  const [userName, setUserName] = useState('');
+  const [newProperties, setNewProperties] = useState([]);
 
-  const newProperties = [
-    {
-      id: '1',
-      title: 'Modern Villa',
-      location: 'LA',
-      details: '4 Beds • 3 Baths • 2500 sqft',
-      image:
-        'https://images.unsplash.com/photo-1560448070-4561d88d83e4?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: '2',
-      title: 'City Apartment',
-      location: 'NY',
-      details: '2 Beds • 2 Baths • 1200 sqft',
-      image:
-        'https://images.unsplash.com/photo-1572120360610-d971b9b8f27f?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: '3',
-      title: 'Beach House',
-      location: 'Miami',
-      details: '3 Beds • 2 Baths • 1800 sqft',
-      image:
-        'https://images.unsplash.com/photo-1501183638714-4e0ab6f969c9?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: '4',
-      title: ' Cottage',
-      location: 'Texas',
-      details: '3 Beds • 2 Baths • 1500 sqft',
-      image:
-        'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=400&q=80',
-    },
-  ];
+  // Logout Function
+  const handleLogout = async () => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (token) {
+        await axios.post('http://192.168.254.106:8000/api/logout', {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      await AsyncStorage.removeItem('authToken');
+      navigation.replace('Login'); // Make sure 'Login' screen is in your navigator
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  // Load token and fetch user info + properties
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (token) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+          // Fetch authenticated user
+          const userRes = await axios.get('http://192.168.254.106:8000/api/user');
+          setUserName(userRes.data.name);
+
+          // Fetch properties
+          const propertyRes = await axios.get('http://192.168.254.106:8000/api/properties');
+          setNewProperties(propertyRes.data);
+        }
+      } catch (error) {
+        console.error('Error loading user or properties:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <ScrollView style={styles.container}>
@@ -57,7 +67,7 @@ export default function Home() {
       <View style={styles.headingContainer}>
         <Text style={styles.heading}>Agent Dashboard</Text>
         <Text style={styles.subheading}>
-          Welcome back, Agent. Manage your listings below.
+          Welcome back, {userName || 'Agent'}. Manage your listings below.
         </Text>
       </View>
 
@@ -77,7 +87,7 @@ export default function Home() {
         </View>
       </View>
 
-      {/* New Properties Horizontal Scroll */}
+      {/* New Properties */}
       <View style={styles.newPropsContainer}>
         <View style={styles.newPropsHeader}>
           <Text style={styles.cardTitle}>New Properties</Text>
@@ -89,7 +99,7 @@ export default function Home() {
         <FlatList
           horizontal
           data={newProperties}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 12 }}
           renderItem={({ item }) => (
@@ -100,7 +110,7 @@ export default function Home() {
               <Text style={styles.propertyDetails}>{item.details}</Text>
               <TouchableOpacity
                 style={styles.seeButton}
-                onPress={() => navigation.navigate('PropertyDetails', {property: item})}
+                onPress={() => navigation.navigate('PropertyDetails', { property: item })}
               >
                 <Text style={styles.seeButtonText}>See</Text>
               </TouchableOpacity>
@@ -125,7 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f6f6f6',
   },
   headingContainer: {
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#5B7931',
     padding: 24,
     borderRadius: 16,
     margin: 12,
@@ -139,6 +149,19 @@ const styles = StyleSheet.create({
   subheading: {
     fontSize: 16,
     color: '#f0f0f0',
+  },
+  logoutButton: {
+    marginTop: 12,
+    backgroundColor: '#E53935',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  logoutText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   analyticsRow: {
     flexDirection: 'row',
@@ -158,7 +181,7 @@ const styles = StyleSheet.create({
   analyticsValue: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#2ecc71',
+    color: '#5B7931',
   },
   analyticsLabel: {
     fontSize: 14,
@@ -167,7 +190,7 @@ const styles = StyleSheet.create({
   },
   newPropsContainer: {
     marginVertical: 16,
-    paddingBottom: 2
+    paddingBottom: 2,
   },
   newPropsHeader: {
     flexDirection: 'row',
@@ -178,7 +201,7 @@ const styles = StyleSheet.create({
   },
   seeAll: {
     fontSize: 14,
-    color: '#3498db',
+    color: '#E5BC2B',
     fontWeight: 'bold',
   },
   propertyCard: {
@@ -213,7 +236,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   seeButton: {
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#5B7931',
     paddingVertical: 6,
     borderRadius: 8,
     alignItems: 'center',
