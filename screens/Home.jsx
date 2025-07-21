@@ -20,9 +20,10 @@ export default function Home() {
   const [userName, setUserName] = useState('');
   const [newProperties, setNewProperties] = useState([]);
 
-  
+  const rootUrl = 'http://192.168.0.109';
+  const prefix = '/api/agent';
+  const baseUrl = `${rootUrl}${prefix}`;
 
-  // Load token and fetch user info + properties
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -30,12 +31,10 @@ export default function Home() {
         if (token) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-          // Fetch authenticated user
-          const userRes = await axios.get('http://192.168.254.106:8000/api/user');
+          const userRes = await axios.get(`${baseUrl}/user`);
           setUserName(userRes.data.name);
 
-          // Fetch properties
-          const propertyRes = await axios.get('http://192.168.254.106:8000/api/properties');
+          const propertyRes = await axios.get(`${baseUrl}/properties`);
           setNewProperties(propertyRes.data);
         }
       } catch (error) {
@@ -45,6 +44,7 @@ export default function Home() {
 
     fetchData();
   }, []);
+
 
   return (
     <ScrollView style={styles.container}>
@@ -81,27 +81,51 @@ export default function Home() {
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          horizontal
-          data={newProperties}
-          keyExtractor={(item) => item.id.toString()}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 12 }}
-          renderItem={({ item }) => (
-            <View style={styles.propertyCard}>
-              <Image source={{ uri: item.image }} style={styles.propertyImage} />
-              <Text style={styles.propertyTitle}>{item.title}</Text>
-              <Text style={styles.propertyLocation}>{item.location}</Text>
-              <Text style={styles.propertyDetails}>{item.details}</Text>
-              <TouchableOpacity
-                style={styles.seeButton}
-                onPress={() => navigation.navigate('PropertyDetails', { property: item })}
-              >
-                <Text style={styles.seeButtonText}>See</Text>
-              </TouchableOpacity>
+        {newProperties?.data?.length === 0 ? (
+            <View style={styles.emptyContainer}>
+                {/* <Image
+                    source={require('../assets/empty-box.png')} // Replace with your own local image
+                    style={styles.emptyImage}
+                    resizeMode="contain"
+                /> */}
+                <Text style={styles.emptyTitle}>No Available Properties</Text>
+                <Text style={styles.emptySubtitle}>Seller haven't added any new properties yet.</Text>
+                {/* <TouchableOpacity style={styles.refreshButton} onPress={() => navigation.navigate('AddProperty')}>
+                    <Text style={styles.refreshButtonText}>Add Property</Text>
+                </TouchableOpacity> */}
             </View>
-          )}
-        />
+
+        ) : (
+          <FlatList
+            horizontal
+            data={newProperties.data}
+            keyExtractor={(item) => item.id.toString()}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingLeft: 20, paddingRight: 12 }}
+            renderItem={({ item }) => (
+              <View style={styles.propertyCard}>
+                <View>
+                  <Image
+                    source={{ uri: `${rootUrl}/storage/${item.image_url}` }}
+                    style={styles.propertyImage}
+                  />
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>NEW</Text>
+                  </View>
+                </View>
+                <Text style={styles.propertyTitle}>{item.title}</Text>
+                <Text style={styles.propertyLocation}>{item.location}</Text>
+                <Text style={styles.propertyDetails}>{item.details}</Text>
+                <TouchableOpacity
+                  style={styles.seeButton}
+                  onPress={() => navigation.navigate('PropertyDetails', { property: item })}
+                >
+                  <Text style={styles.seeButtonText}>View</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        )}
       </View>
 
       {/* Recent Activity */}
@@ -134,19 +158,6 @@ const styles = StyleSheet.create({
   subheading: {
     fontSize: 16,
     color: '#f0f0f0',
-  },
-  logoutButton: {
-    marginTop: 12,
-    backgroundColor: '#E53935',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  logoutText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
   },
   analyticsRow: {
     flexDirection: 'row',
@@ -190,30 +201,48 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   propertyCard: {
-    width: width / 3,
+    width: width * 0.6,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginRight: 12,
-    elevation: 3,
-    padding: 10,
-    height: 280,
-    justifyContent: 'space-between',
+    borderRadius: 16,
+    marginRight: 16,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    padding: 12,
+    overflow: 'hidden',
   },
   propertyImage: {
     width: '100%',
     height: 140,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 10,
+  },
+  badge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#E5BC2B',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+  },
+  badgeText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: 'bold',
   },
   propertyTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 4,
   },
   propertyLocation: {
     fontSize: 13,
-    color: '#777',
-    marginBottom: 4,
+    color: '#888',
+    marginBottom: 2,
   },
   propertyDetails: {
     fontSize: 12,
@@ -221,14 +250,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   seeButton: {
-    backgroundColor: '#5B7931',
-    paddingVertical: 6,
+    backgroundColor: '#E5BC2B',
+    paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
+    marginTop: 4,
   },
   seeButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
     fontSize: 14,
   },
   card: {
@@ -244,9 +274,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 10,
   },
-  cardText: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 6,
-  },
+  emptyContainer: {
+  padding: 40,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+emptyImage: {
+  width: 120,
+  height: 120,
+  marginBottom: 20,
+  opacity: 0.7,
+},
+emptyTitle: {
+  fontSize: 20,
+  fontWeight: '700',
+  color: '#555',
+  marginBottom: 6,
+},
+emptySubtitle: {
+  fontSize: 14,
+  color: '#888',
+  textAlign: 'center',
+  marginBottom: 16,
+},
+refreshButton: {
+  backgroundColor: '#5B7931',
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  borderRadius: 8,
+},
+refreshButtonText: {
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: '600',
+},
+
 });

@@ -37,7 +37,7 @@ export default function Me() {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
           // Fetch authenticated user
-          const userRes = await axios.get('http://192.168.254.106:8000/api/user');
+          const userRes = await axios.get('http://192.168.0.109/api/agent/user');
           setUserName(userRes.data.name);
 
           // Fetch properties
