@@ -86,7 +86,7 @@ const TabNavigator = () => (
 const MainAppNavigator = () => (
   <Drawer.Navigator
     screenOptions={{ headerShown: true }}
-    drawerContent={(props) => <CustomDrawerContent {...props} />} // ⬅️ Use custom drawer
+    // drawerContent={(props) => <CustomDrawerContent {...props} />} // ⬅️ Use custom drawer Logout button yan
   >
     <Drawer.Screen name="Home" component={HomeNavigator} />
     {/* Add more drawer screens if needed */}
