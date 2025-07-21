@@ -8,18 +8,16 @@ import {
   TextInput,
   Modal,
   Alert,
+  ScrollView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import axiosConfig from '../../Helper/axiosConfig';
 
-export default function PropertyDetails({ route, navigation }) {
+export default function PropertyDetails({ route }) {
   const { property } = route.params;
   const [modalVisible, setModalVisible] = useState(false);
   const [inquiryText, setInquiryText] = useState('');
 
-
-
-  
+  const rootUrl = 'http://192.168.0.109';
 
   const handleSendInquiry = async () => {
     if (!inquiryText.trim()) {
@@ -28,69 +26,100 @@ export default function PropertyDetails({ route, navigation }) {
     }
 
     try {
-      const token = await AsyncStorage.getItem('authToken');
-
-      const response = await axios.post(
-        `http://192.168.0.109/api/agent/properties/${property.id}/inquire`,
+      const response = await axiosConfig.post(
+        `/agent/properties/${property.id}/inquire`,
         {
           property_id: property.id,
           message: inquiryText,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 
-      // Show backend message (success or error)
-      if (response.data.success) {
-        Alert.alert('Success', response.data.success);
-      } else if (response.data.error) {
-        Alert.alert('Error', response.data.error);
+      const data = response.data;
+
+      if (data.success) {
+        Alert.alert('Success', data.success);
+      } else if (data.error) {
+        Alert.alert('Error', data.error);
       } else {
-        Alert.alert('Notice', 'Inquiry response received, but no message found.');
+        Alert.alert('Notice', 'Inquiry sent, but no confirmation message returned.');
       }
 
+      setModalVisible(false);
+      setInquiryText('');
     } catch (error) {
-      if (error.response && error.response.status === 422) {
-        // Laravel validation error
-        const validationErrors = error.response.data.errors;
-        const firstError = Object.values(validationErrors)[0][0];
+      if (error.response?.status === 422) {
+        const firstError = Object.values(error.response.data.errors)[0][0];
         Alert.alert('Validation Error', firstError);
       } else {
         console.error('Inquiry error:', error);
         Alert.alert('Error', 'Failed to send inquiry. Please try again.');
       }
     }
-
-    console.log(`Inquiry for ${property.title}: ${inquiryText}`);
-    setModalVisible(false);
-    setInquiryText('');
   };
 
-
-
   return (
-    <View style={styles.container}>
-      <View>
-        <Image source={{ uri: property?.image }} style={styles.image} />
-        <Text style={styles.title}>{property?.title}</Text>
-        <Text style={styles.location}>{property?.location}</Text>
-        <Text style={styles.details}>{property?.details}</Text>
-      </View>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <Image
+        source={{ uri: `${rootUrl}/storage/${property.image_url}` }}
+        style={styles.image}
+      />
 
-      <TouchableOpacity
-        style={styles.inquireButton}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.inquireText}>Send Inquiry</Text>
-      </TouchableOpacity>
+      <View style={styles.content}>
+        {/* Title & Price */}
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>{property.title}</Text>
+          <Text style={styles.price}>₱ {parseFloat(property.price).toLocaleString()}</Text>
+        </View>
+
+        {/* Address */}
+        <Text style={styles.address}>📍 {property.address}</Text>
+
+        {/* Property Details Card */}
+        <View style={styles.detailsCard}>
+          <DetailRow label="Type" value={`${property.property_type} (${property.sub_type})`} />
+          <DetailRow label="Lot Area" value={`${property.lot_area} sqm`} />
+          <DetailRow label="Floor Area" value={`${property.floor_area} sqm`} />
+          <DetailRow label="Rooms" value={property.total_rooms.toString()} />
+          <DetailRow label="Bedrooms" value={property.bedrooms.toString()} />
+          <DetailRow label="Bathrooms" value={property.bathrooms.toString()} />
+          <DetailRow label="Car Slots" value={property.car_slots.toString()} />
+          <DetailRow label="Status" value={property.status} />
+          <DetailRow label="Presell" value={property.isPresell ? 'Yes' : 'No'} />
+          <DetailRow label="Allow Multi Agents" value={property.allow_multi_agents ? 'Yes' : 'No'} />
+        </View>
+
+        {/* Description */}
+        <Text style={styles.sectionTitle}>Description</Text>
+        <Text style={styles.description}>{property.description}</Text>
+
+        {/* Seller Info */}
+        {property.seller && (
+          <>
+            <Text style={styles.sectionTitle}>Seller Information</Text>
+            <View style={styles.sellerCard}>
+              <Text style={styles.sellerName}>{property.seller.name}</Text>
+              <Text style={styles.sellerDetail}>Email: {property.seller.email}</Text>
+              {property.seller.contact_number && (
+                <Text style={styles.sellerDetail}>Contact: {property.seller.contact_number}</Text>
+              )}
+            </View>
+          </>
+        )}
+
+        {/* Inquiry Button */}
+        <TouchableOpacity
+          style={styles.inquireButton}
+          activeOpacity={0.8}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text style={styles.inquireText}>Send Inquiry</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Inquiry Modal */}
       <Modal
         visible={modalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent
         onRequestClose={() => setModalVisible(false)}
       >
@@ -98,12 +127,13 @@ export default function PropertyDetails({ route, navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Send Inquiry</Text>
             <TextInput
-              placeholder="Type your message..."
+              placeholder="Type your message here..."
               value={inquiryText}
               onChangeText={setInquiryText}
               style={styles.input}
               multiline
               numberOfLines={4}
+              textAlignVertical="top"
             />
             <TouchableOpacity style={styles.sendButton} onPress={handleSendInquiry}>
               <Text style={styles.sendButtonText}>Send</Text>
@@ -114,93 +144,178 @@ export default function PropertyDetails({ route, navigation }) {
           </View>
         </View>
       </Modal>
+    </ScrollView>
+  );
+}
+
+// Helper component for detail rows to keep code DRY
+function DetailRow({ label, value }) {
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}:</Text>
+      <Text style={styles.detailValue}>{value}</Text>
     </View>
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'space-between',
-    padding: 20,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#fafafa',
   },
   image: {
     width: '100%',
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 12,
-    backgroundColor: '#ccc',
+    height: 260,
+    resizeMode: 'cover',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
+  content: {
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
-  location: {
-    fontSize: 18,
-    color: '#555',
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 6,
   },
-  details: {
-    fontSize: 16,
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#2e2e2e',
+    flex: 1,
+    marginRight: 10,
+  },
+  price: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4caf50',
+  },
+  address: {
+    fontSize: 15,
     color: '#666',
+    marginBottom: 18,
+  },
+  detailsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
+  },
+  detailLabel: {
+    fontWeight: '600',
+    color: '#444',
+    fontSize: 15,
+  },
+  detailValue: {
+    color: '#555',
+    fontSize: 15,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    color: '#555',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  sellerCard: {
+    backgroundColor: '#e2f0d9',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 32,
+  },
+  sellerName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2e2e2e',
+    marginBottom: 6,
+  },
+  sellerDetail: {
+    fontSize: 15,
+    color: '#444',
+    marginBottom: 4,
   },
   inquireButton: {
-    backgroundColor: '#5B7931',
-    paddingVertical: 12,
-    borderRadius: 10,
+    backgroundColor: '#4caf50',
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20,
+    marginBottom: 32,
+    shadowColor: '#4caf50',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
   },
   inquireText: {
     fontSize: 18,
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 30,
   },
   modalContent: {
     backgroundColor: '#fff',
+    borderRadius: 16,
     padding: 24,
-    borderRadius: 12,
-    width: '85%',
-    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 20,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#222',
   },
   input: {
-    width: '100%',
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    textAlignVertical: 'top',
-    marginBottom: 16,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    marginBottom: 24,
+    minHeight: 100,
+    color: '#333',
   },
   sendButton: {
-    backgroundColor: '#5B7931',
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginBottom: 10,
+    backgroundColor: '#4caf50',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
   },
   sendButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   cancelText: {
-    color: '#999',
-    fontSize: 14,
+    color: '#888',
+    fontSize: 15,
+    textAlign: 'center',
   },
 });
