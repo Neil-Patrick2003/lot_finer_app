@@ -26,6 +26,7 @@ import { ActivityIndicator, View } from 'react-native';
 import Inquiries from './screens/Tripping/Inquiries';
 import ShowProperty from './screens/HandleProperty/ShowProperty';
 import Chat from './screens/Chat/Chat';
+import SingleChat from './screens/Chat/SingleChat';
 
 
 const RootStack = createNativeStackNavigator();
@@ -40,6 +41,8 @@ const HomeNavigator = () => (
     <Stack.Screen name="PropertyDetails" component={PropertyDetails} />
     <Stack.Screen name="Inquiries" component={Inquiries} />
     <Stack.Screen name="ShowProperty" component={ShowProperty} />
+    <Stack.Screen name="SingleChat" component={SingleChat} />
+
   </Stack.Navigator>
 );
 
@@ -102,7 +105,6 @@ const TabNavigator = () => (
 const MainAppNavigator = () => (
   <Drawer.Navigator
     screenOptions={{ headerShown: true }}
-    // drawerContent={(props) => <CustomDrawerContent {...props} />} // ⬅️ Use custom drawer Logout button yan
   >
     <Drawer.Screen name="Home" component={HomeNavigator} />
     {/* Add more drawer screens if needed */}
