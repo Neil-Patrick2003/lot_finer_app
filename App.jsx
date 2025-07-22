@@ -6,6 +6,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import Entypo from '@expo/vector-icons/Entypo';
 import CustomDrawerContent from './components/CustomDrawerContent';
+import Ionicons from '@expo/vector-icons/Ionicons';
+
 
 // Screens
 import Login from './screens/Login';
@@ -21,6 +23,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { ActivityIndicator, View } from 'react-native';
+import Inquiries from './screens/Tripping/Inquiries';
+import ShowProperty from './screens/HandleProperty/ShowProperty';
+import Chat from './screens/Chat/Chat';
 
 
 const RootStack = createNativeStackNavigator();
@@ -33,6 +38,8 @@ const HomeNavigator = () => (
     <Stack.Screen name="TabNavigator" component={TabNavigator} />
     <Stack.Screen name="NewScreen" component={NewScreen} />
     <Stack.Screen name="PropertyDetails" component={PropertyDetails} />
+    <Stack.Screen name="Inquiries" component={Inquiries} />
+    <Stack.Screen name="ShowProperty" component={ShowProperty} />
   </Stack.Navigator>
 );
 
@@ -59,6 +66,15 @@ const TabNavigator = () => (
       options={{
         tabBarIcon: ({ color, size }) => (
           <Entypo name="calendar" size={size} color={color} />
+        ),
+      }}
+    />
+    <Tab.Screen
+      name="Chat" // Corrected from "Triping" to "Tripping"
+      component={Chat}
+      options={{
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="chatbubble-ellipses" size={size} color={color} />
         ),
       }}
     />

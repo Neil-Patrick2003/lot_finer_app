@@ -25,7 +25,7 @@ export default function Me() {
   const menuItems = [
     { id: '1', title: 'Edit Profile', action: () => navigation.navigate('EditProfile') },
     { id: '2', title: 'Saved Properties', action: () => navigation.navigate('SavedProperties') },
-    { id: '3', title: 'My Inquiries', action: () => navigation.navigate('MyInquiries') },
+    { id: '3', title: 'My Inquiries', action: () => navigation.navigate('Inquiries') },
     { id: '4', title: 'Notifications', action: () => navigation.navigate('Notifications') },
     { id: '5', title: 'Privacy Policy', action: () => navigation.navigate('Privacy') },
   ];
