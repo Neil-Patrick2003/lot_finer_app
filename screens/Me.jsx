@@ -12,6 +12,10 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
+// API Configuration
+const API_BASE_URL = 'http://192.168.254.106:8000'; // No port for default port 80
+const API_PREFIX = '/api/agent';
+
 export default function Me() {
   const navigation = useNavigation();
   const [userName, setUserName] = useState('');
@@ -29,6 +33,7 @@ export default function Me() {
     { id: '4', title: 'Notifications', action: () => navigation.navigate('Notifications') },
     { id: '5', title: 'Privacy Policy', action: () => navigation.navigate('Privacy') },
   ];
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -36,21 +41,18 @@ export default function Me() {
         if (token) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-          // Fetch authenticated user
-          const userRes = await axios.get('http://192.168.0.109/api/agent/user');
+          // Correct endpoint with /agent prefix
+          const userRes = await axios.get(`${API_BASE_URL}${API_PREFIX}/user`);
           setUserName(userRes.data.name);
-
-          // Fetch properties
-     
         }
       } catch (error) {
-        console.error('Error loading user or properties:', error);
+        console.error('Error loading user:', error);
+        Alert.alert('Error', 'Failed to load user data');
       }
     };
 
     fetchData();
   }, []);
-
 
   const handleLogout = () => {
     Alert.alert(
@@ -65,8 +67,9 @@ export default function Me() {
             try {
               const token = await AsyncStorage.getItem('authToken');
               if (token) {
+                // Correct logout endpoint to match Laravel routes
                 await axios.post(
-                  'http://192.168.254.106:8000/api/logout',
+                  `${API_BASE_URL}${API_PREFIX}/logout`,
                   {},
                   {
                     headers: {

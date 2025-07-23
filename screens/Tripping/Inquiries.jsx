@@ -13,7 +13,7 @@ import axiosConfig from "../../Helper/axiosConfig";
 export default function Inquiries() {
   const [inquiries, setInquiries] = useState([]);
   const [filterType, setFilterType] = useState("toSeller");
-  const rootUrl = "http://192.168.0.109";
+  const rootUrl = "http://192.168.254.106:8000";
 
   useEffect(() => {
     fetchInquiries();
