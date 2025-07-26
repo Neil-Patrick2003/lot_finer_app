@@ -13,7 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 // API Configuration
-const API_BASE_URL = 'http://192.168.254.106:8000'; // No port for default port 80
+const API_BASE_URL = 'http://192.168.250.129:8000'; // No port for default port 80
 const API_PREFIX = '/api/agent';
 
 export default function Me() {
@@ -31,7 +31,7 @@ export default function Me() {
     { id: '2', title: 'Saved Properties', action: () => navigation.navigate('SavedProperties') },
     { id: '3', title: 'My Inquiries', action: () => navigation.navigate('Inquiries') },
     { id: '4', title: 'Notifications', action: () => navigation.navigate('Notifications') },
-    { id: '5', title: 'Privacy Policy', action: () => navigation.navigate('Privacy') },
+    { id: '5', title: 'Privacy Policy', action: () => navigation.navigate('PrivacyPolicy') },
   ];
 
   useEffect(() => {

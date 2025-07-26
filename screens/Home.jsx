@@ -24,7 +24,7 @@ export default function Home() {
   const [newProperties, setNewProperties] = useState([]);
   const scaleValue = useRef(new Animated.Value(1)).current;
 
-  const rootUrl = 'http://192.168.254.106:8000';
+  const rootUrl = 'http://192.168.250.129:8000';
   const prefix = '/api/agent';
   const baseUrl = `${rootUrl}${prefix}`;
 

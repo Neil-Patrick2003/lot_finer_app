@@ -17,7 +17,7 @@ export default function PropertyDetails({ route }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [inquiryText, setInquiryText] = useState('');
 
-  const rootUrl = 'http://192.168.0.109';
+  const rootUrl = 'http://192.168.250.129';
 
   const handleSendInquiry = async () => {
     if (!inquiryText.trim()) {

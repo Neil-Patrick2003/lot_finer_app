@@ -28,7 +28,7 @@ export default function Login({ navigation }) {
     setLoading(true);
 
     const response = await axios.post(
-      'http://192.168.254.106:8000/api/sanctum/token',
+      'http://192.168.250.129:8000/api/sanctum/token',
       {
         email,
         password,
