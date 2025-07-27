@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import axiosInstance, { API_ENDPOINTS } from '../Helper/axiosConfig';
 
 const { width } = Dimensions.get('window');
 
@@ -24,39 +25,31 @@ export default function Home() {
   const [newProperties, setNewProperties] = useState([]);
   const scaleValue = useRef(new Animated.Value(1)).current;
 
-  const rootUrl = 'http://192.168.250.129:8000';
-  const prefix = '/api/agent';
-  const baseUrl = `${rootUrl}${prefix}`;
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (!token) throw new Error('No token found');
-        
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        // Add timeout to prevent hanging
-        const userRes = await axios.get(`${baseUrl}/user`, { timeout: 5000 });
-        setUserName(userRes.data.name);
+  const fetchData = async () => {
+    try {
+      // No need to manually handle token here - the interceptor does it
+      const userRes = await axiosInstance.get(API_ENDPOINTS.USER, { timeout: 5000 });
+      setUserName(userRes.data.name);
 
-        const propertyRes = await axios.get(`${baseUrl}/properties`, { timeout: 5000 });
-        setNewProperties(propertyRes.data);
-        
-      } catch (error) {
-        console.error('Error:', error.message);
-        if (error.response) {
-          console.error('Response data:', error.response.data);
-          console.error('Response status:', error.response.status);
-        }
-        // Set empty states to prevent UI errors
-        setUserName('Guest');
-        setNewProperties({ data: [] });
+      const propertyRes = await axiosInstance.get(API_ENDPOINTS.PROPERTIES, { timeout: 5000 });
+      setNewProperties(propertyRes.data);
+      
+    } catch (error) {
+      console.error('Error:', error.message);
+      if (error.response?.status === 401) {
+        // Token expired or invalid
+        await AsyncStorage.removeItem('authToken');
+        navigation.navigate('Login');
       }
-    };
+      setUserName('Guest');
+      setNewProperties({ data: [] });
+    }
+  };
 
-    fetchData();
-  }, []);
+  fetchData();
+}, [])
 
   const handlePressIn = () => {
     Animated.timing(scaleValue, {
@@ -146,7 +139,7 @@ export default function Home() {
               <View style={styles.propertyCard}>
                 <View>
                   <Image
-                    source={{ uri: `${rootUrl}/storage/${item.image_url}` }}
+                    source={{ uri: `${API_ENDPOINTS.STORAGE}/${item.image_url}` }}
                     style={styles.propertyImage}
                   />
                   <View style={styles.badge}>

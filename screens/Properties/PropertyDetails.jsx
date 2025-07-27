@@ -10,14 +10,21 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import axiosConfig from '../../Helper/axiosConfig';
+import axiosInstance, { API_ENDPOINTS } from '../../Helper/axiosConfig';
 
 export default function PropertyDetails({ route }) {
   const { property } = route.params;
   const [modalVisible, setModalVisible] = useState(false);
   const [inquiryText, setInquiryText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const rootUrl = 'http://192.168.250.129';
+  // Helper component for property detail rows
+  const DetailRow = ({ label, value }) => (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}:</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
 
   const handleSendInquiry = async () => {
     if (!inquiryText.trim()) {
@@ -25,50 +32,47 @@ export default function PropertyDetails({ route }) {
       return;
     }
 
+    setIsSubmitting(true);
+    
     try {
-      const response = await axiosConfig.post(
-        `/agent/properties/${property.id}/inquire`,
-        {
-          property_id: property.id,
-          message: inquiryText,
-        }
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.propertyInquiry(property.id),
+        { message: inquiryText }
       );
 
-      const data = response.data;
-
-      if (data.success) {
-        Alert.alert('Success', data.success);
-      } else if (data.error) {
-        Alert.alert('Error', data.error);
-      } else {
-        Alert.alert('Notice', 'Inquiry sent, but no confirmation message returned.');
-      }
-
+      Alert.alert('Success', response.data.message || 'Your inquiry was sent successfully!');
       setModalVisible(false);
       setInquiryText('');
     } catch (error) {
+      console.error('Inquiry error:', error);
+      
       if (error.response?.status === 422) {
+        // Handle Laravel validation errors
         const firstError = Object.values(error.response.data.errors)[0][0];
         Alert.alert('Validation Error', firstError);
+      } else if (error.response?.data?.message) {
+        Alert.alert('Error', error.response.data.message);
       } else {
-        console.error('Inquiry error:', error);
         Alert.alert('Error', 'Failed to send inquiry. Please try again.');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Property Image */}
       <Image
-        source={{ uri: `${rootUrl}/storage/${property.image_url}` }}
+        source={{ uri: `${API_ENDPOINTS.STORAGE}/${property.image_url}` }}
         style={styles.image}
       />
 
       <View style={styles.content}>
-        {/* Title & Price */}
+        {/* Title & Price Row */}
         <View style={styles.headerRow}>
           <Text style={styles.title}>{property.title}</Text>
-          <Text style={styles.price}>₱ {parseFloat(property.price).toLocaleString()}</Text>
+          <Text style={styles.price}>₱{parseFloat(property.price).toLocaleString()}</Text>
         </View>
 
         {/* Address */}
@@ -79,20 +83,20 @@ export default function PropertyDetails({ route }) {
           <DetailRow label="Type" value={`${property.property_type} (${property.sub_type})`} />
           <DetailRow label="Lot Area" value={`${property.lot_area} sqm`} />
           <DetailRow label="Floor Area" value={`${property.floor_area} sqm`} />
-          <DetailRow label="Rooms" value={property.total_rooms.toString()} />
-          <DetailRow label="Bedrooms" value={property.bedrooms.toString()} />
-          <DetailRow label="Bathrooms" value={property.bathrooms.toString()} />
-          <DetailRow label="Car Slots" value={property.car_slots.toString()} />
+          <DetailRow label="Rooms" value={property.total_rooms} />
+          <DetailRow label="Bedrooms" value={property.bedrooms} />
+          <DetailRow label="Bathrooms" value={property.bathrooms} />
+          <DetailRow label="Car Slots" value={property.car_slots} />
           <DetailRow label="Status" value={property.status} />
           <DetailRow label="Presell" value={property.isPresell ? 'Yes' : 'No'} />
-          <DetailRow label="Allow Multi Agents" value={property.allow_multi_agents ? 'Yes' : 'No'} />
+          <DetailRow label="Multi Agents" value={property.allow_multi_agents ? 'Allowed' : 'Not Allowed'} />
         </View>
 
-        {/* Description */}
+        {/* Description Section */}
         <Text style={styles.sectionTitle}>Description</Text>
         <Text style={styles.description}>{property.description}</Text>
 
-        {/* Seller Info */}
+        {/* Seller Information */}
         {property.seller && (
           <>
             <Text style={styles.sectionTitle}>Seller Information</Text>
@@ -121,40 +125,41 @@ export default function PropertyDetails({ route }) {
         visible={modalVisible}
         animationType="fade"
         transparent
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => !isSubmitting && setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Send Inquiry</Text>
             <TextInput
               placeholder="Type your message here..."
+              placeholderTextColor="#999"
               value={inquiryText}
               onChangeText={setInquiryText}
               style={styles.input}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
+              editable={!isSubmitting}
             />
-            <TouchableOpacity style={styles.sendButton} onPress={handleSendInquiry}>
-              <Text style={styles.sendButtonText}>Send</Text>
+            <TouchableOpacity 
+              style={[styles.sendButton, isSubmitting && styles.disabledButton]}
+              onPress={handleSendInquiry}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.sendButtonText}>
+                {isSubmitting ? 'Sending...' : 'Send'}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
+            <TouchableOpacity 
+              onPress={() => setModalVisible(false)}
+              disabled={isSubmitting}
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
     </ScrollView>
-  );
-}
-
-// Helper component for detail rows to keep code DRY
-function DetailRow({ label, value }) {
-  return (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>{label}:</Text>
-      <Text style={styles.detailValue}>{value}</Text>
-    </View>
   );
 }
 
@@ -317,5 +322,8 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 15,
     textAlign: 'center',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });

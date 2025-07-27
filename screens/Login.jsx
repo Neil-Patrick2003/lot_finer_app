@@ -1,4 +1,3 @@
-import axios from 'axios';
 import React, { useState } from 'react';
 import {
   View,
@@ -11,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import axiosInstance, { API_ENDPOINTS } from '../Helper/axiosConfig';
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState('');
@@ -19,52 +18,49 @@ export default function Login({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-  if (!email || !password) {
-    Alert.alert('Validation Error', 'Email and password are required.');
-    return;
-  }
+    if (!email || !password) {
+      Alert.alert('Validation Error', 'Email and password are required.');
+      return;
+    }
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const response = await axios.post(
-      'http://192.168.250.129:8000/api/sanctum/token',
-      {
-        email,
-        password,
-        device_name: 'mobile', // required by Laravel Sanctum
-      },
-      {
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+      // 1. Make login request using axiosInstance
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.AUTH,
+        {
+          email,
+          password,
+          device_name: 'mobile',
+        }
+        // No need for headers - they're set in axiosConfig
+      );
 
-    const token = response.data.token;
+      // 2. Save the received token
+      const token = response.data.token;
+      await AsyncStorage.setItem('authToken', token);
 
-    // Save token in AsyncStorage
-    await AsyncStorage.setItem('authToken', token);
+      // 3. No need to manually set axios headers - interceptor handles this
+      // The interceptor in axiosConfig will automatically use this token
+      // for all subsequent requests
 
-    // Set default axios header
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      Alert.alert('Login Successful');
+      navigation.replace('MainApp');
 
-    Alert.alert('Login Successful');
-    navigation.replace('MainApp');
-
-  } catch (error) {
-    console.error(error);
-    Alert.alert(
-      'Login Failed',
-      error.response?.data?.message || 'Something went wrong.'
-    );
-  } finally {
-    setLoading(false);
-  }
-};
-
-
+    } catch (error) {
+      console.error('Login error:', error);
+      Alert.alert(
+        'Login Failed',
+        error.response?.data?.message || 'Invalid email or password'
+      );
+      
+      // Clear token on failed login (optional)
+      await AsyncStorage.removeItem('authToken');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -94,11 +90,13 @@ export default function Login({ navigation }) {
       />
 
       <TouchableOpacity
-        style={[styles.loginButton, loading && { opacity: 0.6 }]}
+        style={[styles.loginButton, loading && styles.disabledButton]}
         onPress={handleLogin}
         disabled={loading}
       >
-        <Text style={styles.loginText}>{loading ? 'Logging in...' : 'Login'}</Text>
+        <Text style={styles.loginText}>
+          {loading ? 'Logging in...' : 'Login'}
+        </Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );
@@ -139,6 +137,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   loginText: {
     color: 'white',

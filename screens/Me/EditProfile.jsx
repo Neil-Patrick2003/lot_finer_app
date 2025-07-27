@@ -1,42 +1,74 @@
-// Me/EditProfile.jsx
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-
-// API Configuration
-const API_BASE_URL = 'http://192.168.250.129:8000'; // No port for default port 80
-const API_PREFIX = '/api/agent';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator
+} from 'react-native';
+import axiosInstance, { API_ENDPOINTS } from '../../Helper/axiosConfig';
 
 const EditProfile = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUserData = async () => {
       try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-          // Fetch user data from the API
-          const userRes = await axios.get(`${API_BASE_URL}${API_PREFIX}/user`);
-          setName(userRes.data.name); // Set the name
-          setEmail(userRes.data.email); // Set the email
-        }
+        setIsLoading(true);
+        const response = await axiosInstance.get(API_ENDPOINTS.USER);
+        setName(response.data.name);
+        setEmail(response.data.email);
       } catch (error) {
-        console.error('Error loading user:', error);
-        Alert.alert('Error', 'Failed to load user data');
+        console.error('Failed to fetch user:', error);
+        Alert.alert('Error', 'Failed to load profile data');
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchData();
+    fetchUserData();
   }, []);
 
-  const handleSave = () => {
-    // Here you would typically send the updated data to your API
-    Alert.alert('Profile Updated', `Name: ${name}\nEmail: ${email}`);
+  const handleSave = async () => {
+    if (!name.trim() || !email.trim()) {
+      Alert.alert('Validation Error', 'Please fill in all fields');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const response = await axiosInstance.put(API_ENDPOINTS.USER, {
+        name,
+        email
+      });
+
+      Alert.alert('Success', 'Profile updated successfully');
+    } catch (error) {
+      console.error('Update error:', error);
+      
+      if (error.response?.status === 422) {
+        const firstError = Object.values(error.response.data.errors)[0][0];
+        Alert.alert('Validation Error', firstError);
+      } else {
+        Alert.alert('Error', 'Failed to update profile. Please try again.');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#5B7931" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -50,6 +82,7 @@ const EditProfile = () => {
           onChangeText={setName}
           placeholder="Enter your name"
           placeholderTextColor="#A9A9A9"
+          editable={!isSaving}
         />
 
         <Text style={styles.label}>Email</Text>
@@ -60,11 +93,20 @@ const EditProfile = () => {
           placeholder="Enter your email"
           keyboardType="email-address"
           placeholderTextColor="#A9A9A9"
+          editable={!isSaving}
         />
       </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Save Changes</Text>
+      <TouchableOpacity
+        style={[styles.saveButton, isSaving && styles.disabledButton]}
+        onPress={handleSave}
+        disabled={isSaving}
+      >
+        {isSaving ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.saveButtonText}>Save Changes</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -75,8 +117,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F7F7F8', // Light background for iOS style
+    backgroundColor: '#F7F7F8',
     padding: 16,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,
@@ -97,25 +142,30 @@ const styles = StyleSheet.create({
     height: 50,
     borderColor: '#D1D1D6',
     borderWidth: 1,
-    borderRadius: 10, // Rounded corners for a softer look
+    borderRadius: 10,
     paddingHorizontal: 16,
     marginBottom: 16,
     backgroundColor: '#FFFFFF',
     fontSize: 16,
   },
   saveButton: {
-    backgroundColor: '#5B7931', // Updated to the specified green color
+    backgroundColor: '#5B7931',
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 24,
     marginTop: 20,
-    width: '100%', // Full width button
+    width: '100%',
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   saveButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
-    textAlign: 'center', // Center the text
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });
 

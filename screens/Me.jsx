@@ -10,15 +10,12 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-
-// API Configuration
-const API_BASE_URL = 'http://192.168.250.129:8000'; // No port for default port 80
-const API_PREFIX = '/api/agent';
+import axiosInstance, { API_ENDPOINTS } from '../Helper/axiosConfig';
 
 export default function Me() {
   const navigation = useNavigation();
   const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
 
   const accountStats = [
     { label: 'Active Listings', value: '23' },
@@ -35,26 +32,21 @@ export default function Me() {
   ];
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUserData = async () => {
       try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-          // Correct endpoint with /agent prefix
-          const userRes = await axios.get(`${API_BASE_URL}${API_PREFIX}/user`);
-          setUserName(userRes.data.name);
-        }
+        const response = await axiosInstance.get(API_ENDPOINTS.USER);
+        setUserName(response.data.name);
+        setUserEmail(response.data.email || '22-71596@g.batstate-u.edu.ph');
       } catch (error) {
-        console.error('Error loading user:', error);
+        console.error('Failed to fetch user:', error);
         Alert.alert('Error', 'Failed to load user data');
       }
     };
 
-    fetchData();
+    fetchUserData();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       'Sign Out',
       'Are you sure you want to sign out?',
@@ -65,25 +57,14 @@ export default function Me() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem('authToken');
-              if (token) {
-                // Correct logout endpoint to match Laravel routes
-                await axios.post(
-                  `${API_BASE_URL}${API_PREFIX}/logout`,
-                  {},
-                  {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                      Accept: 'application/json',
-                    },
-                  }
-                );
-              }
+              await axiosInstance.post(API_ENDPOINTS.LOGOUT);
               await AsyncStorage.removeItem('authToken');
               navigation.replace('Login');
             } catch (error) {
-              console.error('Logout failed:', error);
-              Alert.alert('Logout Failed', 'Please try again.');
+              console.error('Logout error:', error);
+              // Still proceed with logout even if API call fails
+              await AsyncStorage.removeItem('authToken');
+              navigation.replace('Login');
             }
           },
         },
