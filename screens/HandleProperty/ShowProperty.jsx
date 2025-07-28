@@ -11,9 +11,8 @@ import {
   FlatList,
   ActivityIndicator
 } from 'react-native';
-import axiosConfig from '../../Helper/axiosConfig';
+import axiosInstance, { API_ENDPOINTS } from '../../Helper/axiosConfig';
 
-const BASE_URL = 'http://192.168.0.109/storage/';
 const { width } = Dimensions.get('window');
 
 export default function ShowProperty({ route }) {
@@ -40,7 +39,7 @@ export default function ShowProperty({ route }) {
 
   const fetchProperty = async () => {
     try {
-      const response = await axiosConfig.get(`/agent/listing/${property.id}`);
+      const response = await axiosInstance.get(API_ENDPOINTS.PROPERTY_DETAIL);
       if (response.status === 200) {
         setPropertyDetails(response.data.data);
       }
@@ -79,7 +78,7 @@ export default function ShowProperty({ route }) {
         keyExtractor={(_, index) => index.toString()}
         renderItem={({ item }) => (
           <Image
-            source={{ uri: `${BASE_URL}${item.image_url}` }}
+            source={{ uri: `${API_ENDPOINTS.STORAGE}/${item.image_url}` }}
             style={styles.galleryImage}
           />
         )}
@@ -148,7 +147,6 @@ export default function ShowProperty({ route }) {
             <Text style={styles.buttonText}>{prop.status}</Text>
         </TouchableOpacity>
       )}
-      
     </ScrollView>
   );
 }

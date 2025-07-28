@@ -8,15 +8,12 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import axiosConfig from '../Helper/axiosConfig';
-  import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import axiosInstance, { API_ENDPOINTS } from '../Helper/axiosConfig';
 
-
-const Handle = ( ) => {
+const Handle = () => {
   const [handleProperties, setHandleProperties] = useState([]);
-  const rootUrl = 'http://192.168.0.109';
-
-const navigation = useNavigation();
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchProperties();
@@ -24,7 +21,7 @@ const navigation = useNavigation();
 
   const fetchProperties = async () => {
     try {
-      const response = await axiosConfig.get('/agent/listing');
+      const response = await axiosInstance.get(API_ENDPOINTS.LIST); 
       if (response.status === 200) {
         setHandleProperties(response.data.data || []);
       }
@@ -37,7 +34,7 @@ const navigation = useNavigation();
   const renderPropertyItem = ({ item }) => (
     <View style={styles.propertyCard}>
       <Image
-        source={{ uri: `${rootUrl}/storage/${item.property.image_url}` }}
+        source={{ uri: `${API_ENDPOINTS.STORAGE}/${item.property.image_url}` }}
         style={styles.propertyImage}
       />
       <View style={styles.propertyInfo}>
@@ -48,9 +45,7 @@ const navigation = useNavigation();
         </Text>
       </View>
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.editButton}
-        >
+        <TouchableOpacity style={styles.editButton}>
           <Text style={styles.buttonText}>Edit</Text>
         </TouchableOpacity>
         <TouchableOpacity

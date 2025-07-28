@@ -9,6 +9,10 @@ const API_SETTINGS = {
     USER: 'agent/user',
     PROPERTIES: 'agent/properties',
     STORAGE: 'http://192.168.254.106:8000/storage',
+    LIST: 'agent/listing',
+    INQUIRIES: 'agent/inquiries',
+    INQUIRIES2: `agent/inquiries/${id}/${action}`,
+    PROPERTY_DETAIL: `agent/listing/${id}`,
   }
 };
 
@@ -55,6 +59,6 @@ axiosInstance.interceptors.response.use(
 
 export default axiosInstance;
 export const API_ENDPOINTS = {
-  ...API_SETTINGS.endpoints,
-  PROPERTY_DETAIL: (id) => `agent/properties/${id}`,
+  ...API_SETTINGS.endpoints
+  
 };
