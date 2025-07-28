@@ -11,8 +11,8 @@ const API_SETTINGS = {
     STORAGE: 'http://192.168.254.106:8000/storage',
     LIST: 'agent/listing',
     INQUIRIES: 'agent/inquiries',
-    INQUIRIES2: `agent/inquiries/${id}/${action}`,
-    PROPERTY_DETAIL: `agent/listing/${id}`,
+    INQUIRIES2: (id, action) => `agent/inquiries/${id}/${action}`,
+    PROPERTY_DETAIL: (id) => `agent/listing/${id}`
   }
 };
 
