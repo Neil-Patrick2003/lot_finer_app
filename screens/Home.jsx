@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import {
+import React, { useEffect, useState, useRef } from 'react';
+import { 
   View,
   Text,
   StyleSheet,
@@ -8,10 +8,14 @@ import {
   FlatList,
   Image,
   Dimensions,
+  Animated,
+  Easing
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import axiosInstance, { API_ENDPOINTS } from '../Helper/axiosConfig';
 
 const { width } = Dimensions.get('window');
 
@@ -19,32 +23,51 @@ export default function Home() {
   const navigation = useNavigation();
   const [userName, setUserName] = useState('');
   const [newProperties, setNewProperties] = useState([]);
+  const scaleValue = useRef(new Animated.Value(1)).current;
 
-  const rootUrl = 'http://192.168.0.109';
-  const prefix = '/api/agent';
-  const baseUrl = `${rootUrl}${prefix}`;
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  const fetchData = async () => {
+    try {
+      // No need to manually handle token here - the interceptor does it
+      const userRes = await axiosInstance.get(API_ENDPOINTS.USER, { timeout: 5000 });
+      setUserName(userRes.data.name);
 
-          const userRes = await axios.get(`${baseUrl}/user`);
-          setUserName(userRes.data.name);
-
-          const propertyRes = await axios.get(`${baseUrl}/properties`);
-          setNewProperties(propertyRes.data);
-        }
-      } catch (error) {
-        console.error('Error loading user or properties:', error);
+      const propertyRes = await axiosInstance.get(API_ENDPOINTS.PROPERTIES, { timeout: 5000 });
+      setNewProperties(propertyRes.data);
+      
+    } catch (error) {
+      console.error('Error:', error.message);
+      if (error.response?.status === 401) {
+        // Token expired or invalid
+        await AsyncStorage.removeItem('authToken');
+        navigation.navigate('Login');
       }
-    };
+      setUserName('Guest');
+      setNewProperties({ data: [] });
+    }
+  };
 
-    fetchData();
-  }, []);
+  fetchData();
+}, [])
 
+  const handlePressIn = () => {
+    Animated.timing(scaleValue, {
+      toValue: 0.95,
+      duration: 100,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.timing(scaleValue, {
+      toValue: 1,
+      duration: 200,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => navigation.navigate('PropertyListing'));
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -54,6 +77,25 @@ export default function Home() {
         <Text style={styles.subheading}>
           Welcome back, {userName || 'Agent'}. Manage your listings below.
         </Text>
+      
+        {/* List Property Button */}
+        <Animated.View 
+          style={[
+            styles.listPropertyButton,
+            { transform: [{ scale: scaleValue }] }
+          ]}
+        >
+          <TouchableOpacity
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            activeOpacity={0.8}
+          >
+            <View style={styles.buttonContent}>
+              <Ionicons name="add" size={20} color="white" />
+              <Text style={styles.buttonText}>List your property</Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       {/* Analytics Summary */}
@@ -83,18 +125,9 @@ export default function Home() {
 
         {newProperties?.data?.length === 0 ? (
             <View style={styles.emptyContainer}>
-                {/* <Image
-                    source={require('../assets/empty-box.png')} // Replace with your own local image
-                    style={styles.emptyImage}
-                    resizeMode="contain"
-                /> */}
                 <Text style={styles.emptyTitle}>No Available Properties</Text>
                 <Text style={styles.emptySubtitle}>Seller haven't added any new properties yet.</Text>
-                {/* <TouchableOpacity style={styles.refreshButton} onPress={() => navigation.navigate('AddProperty')}>
-                    <Text style={styles.refreshButtonText}>Add Property</Text>
-                </TouchableOpacity> */}
             </View>
-
         ) : (
           <FlatList
             horizontal
@@ -106,7 +139,7 @@ export default function Home() {
               <View style={styles.propertyCard}>
                 <View>
                   <Image
-                    source={{ uri: `${rootUrl}/storage/${item.image_url}` }}
+                    source={{ uri: `${API_ENDPOINTS.STORAGE}/${item.image_url}` }}
                     style={styles.propertyImage}
                   />
                   <View style={styles.badge}>
@@ -139,6 +172,28 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  listPropertyButton: {
+    marginTop: 20,
+    backgroundColor: '#E5BC2B',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    alignSelf: 'flex-start',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f6f6f6',
@@ -275,38 +330,32 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   emptyContainer: {
-  padding: 40,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-emptyImage: {
-  width: 120,
-  height: 120,
-  marginBottom: 20,
-  opacity: 0.7,
-},
-emptyTitle: {
-  fontSize: 20,
-  fontWeight: '700',
-  color: '#555',
-  marginBottom: 6,
-},
-emptySubtitle: {
-  fontSize: 14,
-  color: '#888',
-  textAlign: 'center',
-  marginBottom: 16,
-},
-refreshButton: {
-  backgroundColor: '#5B7931',
-  paddingVertical: 10,
-  paddingHorizontal: 20,
-  borderRadius: 8,
-},
-refreshButtonText: {
-  color: '#fff',
-  fontSize: 14,
-  fontWeight: '600',
-},
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#555',
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  refreshButton: {
+    backgroundColor: '#5B7931',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
 
 });

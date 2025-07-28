@@ -10,11 +10,12 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import axiosInstance, { API_ENDPOINTS } from '../Helper/axiosConfig';
 
 export default function Me() {
   const navigation = useNavigation();
   const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
 
   const accountStats = [
     { label: 'Active Listings', value: '23' },
@@ -27,32 +28,25 @@ export default function Me() {
     { id: '2', title: 'Saved Properties', action: () => navigation.navigate('SavedProperties') },
     { id: '3', title: 'My Inquiries', action: () => navigation.navigate('Inquiries') },
     { id: '4', title: 'Notifications', action: () => navigation.navigate('Notifications') },
-    { id: '5', title: 'Privacy Policy', action: () => navigation.navigate('Privacy') },
+    { id: '5', title: 'Privacy Policy', action: () => navigation.navigate('PrivacyPolicy') },
   ];
+
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUserData = async () => {
       try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-          // Fetch authenticated user
-          const userRes = await axios.get('http://192.168.0.109/api/agent/user');
-          setUserName(userRes.data.name);
-
-          // Fetch properties
-     
-        }
+        const response = await axiosInstance.get(API_ENDPOINTS.USER);
+        setUserName(response.data.name);
+        setUserEmail(response.data.email || '22-71596@g.batstate-u.edu.ph');
       } catch (error) {
-        console.error('Error loading user or properties:', error);
+        console.error('Failed to fetch user:', error);
+        Alert.alert('Error', 'Failed to load user data');
       }
     };
 
-    fetchData();
+    fetchUserData();
   }, []);
 
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       'Sign Out',
       'Are you sure you want to sign out?',
@@ -63,24 +57,14 @@ export default function Me() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem('authToken');
-              if (token) {
-                await axios.post(
-                  'http://192.168.254.106:8000/api/logout',
-                  {},
-                  {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                      Accept: 'application/json',
-                    },
-                  }
-                );
-              }
+              await axiosInstance.post(API_ENDPOINTS.LOGOUT);
               await AsyncStorage.removeItem('authToken');
               navigation.replace('Login');
             } catch (error) {
-              console.error('Logout failed:', error);
-              Alert.alert('Logout Failed', 'Please try again.');
+              console.error('Logout error:', error);
+              // Still proceed with logout even if API call fails
+              await AsyncStorage.removeItem('authToken');
+              navigation.replace('Login');
             }
           },
         },

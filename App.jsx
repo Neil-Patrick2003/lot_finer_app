@@ -7,6 +7,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import Entypo from '@expo/vector-icons/Entypo';
 import CustomDrawerContent from './components/CustomDrawerContent';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import PropertyListingScreen from './components/ListProperty';
 
 
 // Screens
@@ -16,6 +17,11 @@ import Me from './screens/Me';
 import NewScreen from './screens/NewScreen';
 import Tripping from './screens/Tripping';
 import PropertyDetails from './screens/Properties/PropertyDetails';
+import EditProfile from './screens/Me/EditProfile';
+import MyInquiries from './screens/Me/MyInquiries';
+import Notifications from './screens/Me/Notifications';
+import PrivacyPolicy from './screens/Me/PrivacyPolicy'; 
+import SavedProperties from './screens/Me/SavedProperties';
 import Handle from './screens/Handle'; // Import the new Handle screen
 
 
@@ -41,7 +47,13 @@ const HomeNavigator = () => (
     <Stack.Screen name="PropertyDetails" component={PropertyDetails} />
     <Stack.Screen name="Inquiries" component={Inquiries} />
     <Stack.Screen name="ShowProperty" component={ShowProperty} />
-    <Stack.Screen name="SingleChat" component={SingleChat} />
+    <Stack.Screen name="PropertyListing" component={PropertyListingScreen} />
+    <Stack.Screen name="EditProfile" component={EditProfile} />  
+    <Stack.Screen name="MyInquiries" component={MyInquiries} /> 
+    <Stack.Screen name="Notifications" component={Notifications} />
+    <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
+    <Stack.Screen name="SavedProperties" component={SavedProperties} />     
+    {/* <Stack.Screen name="SingleChat" component={SingleChat} /> */}
 
   </Stack.Navigator>
 );
@@ -72,7 +84,7 @@ const TabNavigator = () => (
         ),
       }}
     />
-    <Tab.Screen
+    {/* <Tab.Screen
       name="Chat" // Corrected from "Triping" to "Tripping"
       component={Chat}
       options={{
@@ -80,7 +92,7 @@ const TabNavigator = () => (
           <Ionicons name="chatbubble-ellipses" size={size} color={color} />
         ),
       }}
-    />
+    /> */}
     <Tab.Screen
       name="Handle" // New Handle tab
       component={Handle}
@@ -146,6 +158,7 @@ export default function App() {
       <RootStack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
         <RootStack.Screen name="Login" component={Login} />
         <RootStack.Screen name="MainApp" component={MainAppNavigator} />
+        
       </RootStack.Navigator>
     </NavigationContainer>
   );
