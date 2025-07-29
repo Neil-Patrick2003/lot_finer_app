@@ -17,6 +17,7 @@ import MapView, { Marker, Polygon } from 'react-native-maps';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import axiosInstance, { API_ENDPOINTS } from '../Helper/axiosConfig';
 
 const PropertyTypes = [
   {
@@ -82,21 +83,9 @@ const PropertyListingScreen = ({ navigation }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const API_BASE_URL = 'http://192.168.254.106:8000/api/agent';
 
-  useEffect(() => {
-    const setAuthToken = async () => {
-      try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        }
-      } catch (error) {
-        console.error('Error setting auth token:', error);
-      }
-    };
-    setAuthToken();
-  }, []);
+
+
 
   const loadAgents = async () => {
     try {
@@ -106,7 +95,7 @@ const PropertyListingScreen = ({ navigation }) => {
         throw new Error('Authentication token not found');
       }
 
-      const response = await axios.get(`${API_BASE_URL}/user`, {
+      const response = await axiosInstance.get(API_ENDPOINTS.USER, {
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
