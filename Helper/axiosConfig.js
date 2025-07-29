@@ -3,12 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_SETTINGS = {
   baseURL: 'https://test.nutrisafari.xyz/api/',
+
   endpoints: {
     AUTH: 'sanctum/token',
     AGENT: 'agent',
     USER: 'agent/user',
     PROPERTIES: 'agent/properties',
     STORAGE: 'https://test.nutrisafari.xyz/storage',
+
     LIST: 'agent/listing',
     INQUIRIES: 'agent/inquiries',
     INQUIRIES2: (id, action) => `agent/inquiries/${id}/${action}`,

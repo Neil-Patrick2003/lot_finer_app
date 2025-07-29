@@ -1,23 +1,23 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { 
+import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Animated
+  Animated,
+  Image
+
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import axiosInstance, { API_ENDPOINTS } from '../Helper/axiosConfig';
-import PropertyListScreen from './Properties/PropertyListScreen';
-
+import ShowProperty from './HandleProperty/ShowProperty';
 
 export default function Home() {
   const navigation = useNavigation();
-  const [userName, setUserName] = useState('');
+  const [userData, setUserData] = useState(null);
   const [newProperties, setNewProperties] = useState([]);
   const scaleValue = useRef(new Animated.Value(1)).current;
 
@@ -25,19 +25,18 @@ export default function Home() {
     const fetchData = async () => {
       try {
         const userRes = await axiosInstance.get(API_ENDPOINTS.USER, { timeout: 5000 });
-        setUserName(userRes.data.name);
+        setUserData(userRes.data);
 
-        const propertyRes = await axiosInstance.get(API_ENDPOINTS.PROPERTIES, { 
+        const propertyRes = await axiosInstance.get(API_ENDPOINTS.PROPERTIES, {
           params: { page: 1, per_page: 4 }
         });
-        setNewProperties(propertyRes.data.data);
+        setNewProperties(propertyRes.data);
       } catch (error) {
         console.error('Error:', error.message);
         if (error.response?.status === 401) {
           await AsyncStorage.removeItem('authToken');
           navigation.navigate('Login');
         }
-        setUserName('Guest');
       }
     };
 
@@ -52,6 +51,7 @@ export default function Home() {
     }).start();
   };
 
+
   const handlePressOut = () => {
     Animated.timing(scaleValue, {
       toValue: 1,
@@ -60,15 +60,20 @@ export default function Home() {
     }).start(() => navigation.navigate('PropertyListing'));
   };
 
+  const userName = userData?.user?.name || 'Agent';
+  const listingCount = userData?.listingCount ?? 0;
+  const inquiryCount = userData?.inquiryCount ?? 0;
+  const availableCount = userData?.availableCount ?? 0;
+
   return (
-    <View style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.headingContainer}>
         <Text style={styles.heading}>Agent Dashboard</Text>
         <Text style={styles.subheading}>
-          Welcome back, {userName || 'Agent'}
+          Welcome back, {userName}
         </Text>
-      
+
         <Animated.View style={[styles.listPropertyButton, { transform: [{ scale: scaleValue }] }]}>
           <TouchableOpacity
             onPressIn={handlePressIn}
@@ -86,16 +91,16 @@ export default function Home() {
       {/* Analytics Summary */}
       <View style={styles.analyticsRow}>
         <View style={styles.analyticsCard}>
-          <Text style={styles.analyticsValue}>24</Text>
+          <Text style={styles.analyticsValue}>{listingCount}</Text>
           <Text style={styles.analyticsLabel}>Listings</Text>
         </View>
         <View style={styles.analyticsCard}>
-          <Text style={styles.analyticsValue}>12</Text>
+          <Text style={styles.analyticsValue}>{inquiryCount}</Text>
           <Text style={styles.analyticsLabel}>Inquiries</Text>
         </View>
         <View style={styles.analyticsCard}>
-          <Text style={styles.analyticsValue}>8</Text>
-          <Text style={styles.analyticsLabel}>Handled</Text>
+          <Text style={styles.analyticsValue}>{availableCount}</Text>
+          <Text style={styles.analyticsLabel}>Available</Text>
         </View>
       </View>
 
@@ -107,27 +112,47 @@ export default function Home() {
             <Text style={styles.seeAll}>View All</Text>
           </TouchableOpacity>
         </View>
-        
-        {newProperties.length > 0 ? (
-          <PropertyListScreen 
-            navigation={navigation}
-            compact={true}
-            initialData={newProperties}
-            showAll={false}
-          />
+        {newProperties?.data?.length > 0 ? (
+          <View>
+            {newProperties.data.map((property) => (
+              <TouchableOpacity 
+                key={property.id} 
+              >
+                <View style={styles.propertyCard}>
+                  <View style={styles.imageWrapper}>
+                    <Image
+                      source={{ uri: `${API_ENDPOINTS.STORAGE}/${property.image_url}` }}
+                      style={styles.propertyImage}
+                      resizeMode="cover"
+                    />
+                  </View>
+
+                  <View style={styles.propertyDetails}>
+                    <Text style={styles.propertyTitle}>{property.title}</Text>
+                    <Text style={styles.propertyPrice}>₱ {parseFloat(property.price).toLocaleString()}</Text>
+
+                    <Text style={styles.propertyMeta}>
+                      🏠 {property.lot_area || '--'} sqm • 📐 {property.floor_area || '--'} sqm
+                    </Text>
+
+                    <Text style={styles.propertySeller}>👤 {property.seller?.name || 'Unknown Seller'}</Text>
+                    <Text style={styles.propertyAddress}>📍 {property.address}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+
+          </View>
         ) : (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No properties available</Text>
           </View>
         )}
-      </View>
 
-      {/* Full Properties Section */}
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>All Properties</Text>
-        <PropertyListScreen navigation={navigation} />
+
       </View>
-    </View>
+      
+    </ScrollView>
   );
 }
 
@@ -221,5 +246,62 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#888',
-  }
+  },
+  propertyCard: {
+  flexDirection: 'row',
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  padding: 12,
+  marginBottom: 12,
+  elevation: 2,
+},
+
+imageWrapper: {
+  width: 100,
+  height: 100,
+  borderRadius: 10,
+  overflow: 'hidden',
+  marginRight: 12,
+},
+
+propertyImage: {
+  width: '100%',
+  height: '100%',
+},
+
+propertyDetails: {
+  flex: 1,
+  justifyContent: 'space-between',
+},
+
+propertyTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: '#333',
+},
+
+propertyPrice: {
+  fontSize: 15,
+  fontWeight: '600',
+  color: '#5B7931',
+  marginVertical: 4,
+},
+
+propertyMeta: {
+  fontSize: 13,
+  color: '#666',
+  marginBottom: 2,
+},
+
+propertySeller: {
+  fontSize: 13,
+  color: '#888',
+},
+
+propertyAddress: {
+  fontSize: 13,
+  color: '#888',
+},
+
+  
 });

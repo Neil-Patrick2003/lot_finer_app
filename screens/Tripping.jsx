@@ -22,7 +22,7 @@ export default function Tripping() {
 
   const fetchTrippings = async () => {
     try {
-      const response = await axiosConfig.get("/agent/tripping");
+      const response = await axiosConfig.get("agent/tripping");
       if (response.status === 200) {
         setTrippings(response.data.data || []);
       }
