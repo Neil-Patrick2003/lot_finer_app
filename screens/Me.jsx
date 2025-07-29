@@ -1,365 +1,272 @@
-import React, { useEffect, useState } from 'react';
+import { useState, useEffect } from "react";
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
+  FlatList,
   TouchableOpacity,
-  ScrollView,
   Image,
-  Alert,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axiosInstance, { API_ENDPOINTS } from '../Helper/axiosConfig';
+} from "react-native";
+import axiosInstance, { API_ENDPOINTS } from "../Helper/axiosConfig";
 
-export default function Me() {
-  const navigation = useNavigation();
-  const [userName, setUserName] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-
-  const accountStats = [
-    { label: 'Active Listings', value: '23' },
-    { label: 'Clients Served', value: '47' },
-    { label: 'Properties Sold', value: '12' },
-  ];
-
-  const menuItems = [
-    { id: '1', title: 'Edit Profile', action: () => navigation.navigate('EditProfile') },
-    { id: '2', title: 'Saved Properties', action: () => navigation.navigate('SavedProperties') },
-    { id: '3', title: 'My Inquiries', action: () => navigation.navigate('Inquiries') },
-    { id: '4', title: 'Notifications', action: () => navigation.navigate('Notifications') },
-    { id: '5', title: 'Privacy Policy', action: () => navigation.navigate('PrivacyPolicy') },
-  ];
+export default function Inquiries() {
+  const [inquiries, setInquiries] = useState([]);
+  const [filterType, setFilterType] = useState("toSeller");
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await axiosInstance.get(API_ENDPOINTS.USER);
-        setUserName(response.data.name);
-        setUserEmail(response.data.email || '22-71596@g.batstate-u.edu.ph');
-      } catch (error) {
-        console.error('Failed to fetch user:', error);
-        Alert.alert('Error', 'Failed to load user data');
-      }
-    };
-
-    fetchUserData();
+    fetchInquiries();
   }, []);
 
-  const handleLogout = async () => {
+  const fetchInquiries = async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.INQUIRIES); // Replace with API_ENDPOINTS.INQUIRIES when ready
+      if (response.status === 200) {
+        setInquiries(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading inquiries:", error);
+      Alert.alert("Error", "Failed to load inquiries.");
+    }
+  };
+
+  const handleUpdate = (id, action) => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      "Confirm Action",
+      `Are you sure you want to ${action} this inquiry?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Sign Out',
-          style: 'destructive',
+          text: "Yes",
           onPress: async () => {
             try {
-              await axiosInstance.post(API_ENDPOINTS.LOGOUT);
-              await AsyncStorage.removeItem('authToken');
-              navigation.replace('Login');
+              const response = await axiosInstance.put(API_ENDPOINTS.INQUIRIES2);
+              if (response.status === 200) {
+                Alert.alert("Success", `Inquiry ${action}ed successfully.`);
+                fetchInquiries();
+              }
             } catch (error) {
-              console.error('Logout error:', error);
-              // Still proceed with logout even if API call fails
-              await AsyncStorage.removeItem('authToken');
-              navigation.replace('Login');
+              const message =
+                error.response?.data?.error ||
+                error.response?.data?.message ||
+                "Something went wrong. Please try again.";
+              console.error("Update error:", message);
+              Alert.alert("Error", message);
             }
           },
         },
-      ]
+      ],
+      { cancelable: false }
+    );
+  };
+
+  const inquiriesToSeller = inquiries.filter((inq) => inq.buyer_id === null);
+  const inquiriesFromBuyer = inquiries.filter((inq) => inq.buyer_id !== null);
+
+  const renderItem = ({ item }) => {
+    const isBuyerInquiry = item.buyer_id !== null;
+    const person = isBuyerInquiry ? item.buyer : item.seller;
+
+    return (
+      <View style={styles.item}>
+        <Text style={styles.title}>{item.property?.title || "No Title"}</Text>
+        <Text style={styles.subText}>
+          Status: <Text style={styles.statusValue}>{item.status}</Text>
+        </Text>
+        <Text style={styles.subText}>
+          Location: {item.property?.address || "Unknown"}
+        </Text>
+        <Text style={styles.subText}>
+          {isBuyerInquiry ? "From Buyer" : "To Seller"}:{" "}
+          <Text style={styles.bold}>{person?.name || "N/A"}</Text>
+        </Text>
+        <Text style={styles.subText}>Email: {person?.email || "N/A"}</Text>
+
+        {item.property?.image_url && (
+          <Image
+            source={{ uri: `${API_ENDPOINTS.STORAGE}/${item.property.image_url}` }}
+            style={styles.image}
+          />
+        )}
+
+        <View style={styles.actionContainer}>
+          {item.status === "Pending" ? (
+            isBuyerInquiry ? (
+              <>
+                <TouchableOpacity
+                  onPress={() => handleUpdate(item.id, "accept")}
+                  style={styles.acceptBtn}
+                >
+                  <Text style={styles.btnText}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleUpdate(item.id, "decline")}
+                  style={styles.declineBtn}
+                >
+                  <Text style={styles.btnText}>Decline</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                onPress={() => handleUpdate(item.id, "cancel")}
+                style={styles.cancelBtn}
+              >
+                <Text style={styles.btnText}>Cancel</Text>
+              </TouchableOpacity>
+            )
+          ) : (
+            <Text style={styles.statusText}>{item.status}</Text>
+          )}
+        </View>
+      </View>
     );
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Profile Header */}
-      <View style={styles.profileHeader}>
-        <View style={styles.profileImageContainer}>
-          <Image
-            source={{
-              uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
-            }}
-            style={styles.profileImage}
-          />
-        </View>
-        <Text style={styles.userName}>{userName || 'Agent'}</Text>
-        <Text style={styles.userEmail}>22-71596@g.batstate-u.edu.ph</Text>
-        <Text style={styles.membershipBadge}>Agent</Text>
-      </View>
+    <View style={styles.container}>
+      <Text style={styles.header}>Inquiries</Text>
 
-      {/* Account Statistics */}
-      <View style={styles.statsSection}>
-        <Text style={styles.sectionTitle}>Overview</Text>
-        <View style={styles.statsContainer}>
-          {accountStats.map((stat, index) => (
-            <View
-              key={index}
-              style={[
-                styles.statCard,
-                index < accountStats.length - 1 && styles.statCardBorder,
-              ]}
-            >
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Menu Items */}
-      <View style={styles.menuSection}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <View style={styles.menuContainer}>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[
-                styles.menuItem,
-                index === menuItems.length - 1 && styles.lastMenuItem,
-              ]}
-              onPress={item.action}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.menuTitle}>{item.title}</Text>
-              <Text style={styles.menuArrow}>›</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* Recent Activity */}
-      <View style={styles.activitySection}>
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
-        <View style={styles.activityContainer}>
-          <View style={styles.activityItem}>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityText}>Listed Modern Villa</Text>
-              <Text style={styles.activityLocation}>Los Angeles, CA</Text>
-            </View>
-            <Text style={styles.activityTime}>2h ago</Text>
-          </View>
-          <View style={styles.activityItem}>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityText}>Client Meeting Scheduled</Text>
-              <Text style={styles.activityLocation}>Miami, FL</Text>
-            </View>
-            <Text style={styles.activityTime}>1d ago</Text>
-          </View>
-          <View style={[styles.activityItem, styles.lastActivityItem]}>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityText}>Property Sold</Text>
-              <Text style={styles.activityLocation}>City Apartment, NY</Text>
-            </View>
-            <Text style={styles.activityTime}>2d ago</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Sign Out Button */}
-      <View style={styles.signOutSection}>
+      <View style={styles.filterContainer}>
         <TouchableOpacity
-          style={styles.signOutButton}
-          onPress={handleLogout}
-          activeOpacity={0.7}
+          style={[styles.filterBtn, filterType === "toSeller" && styles.activeFilter]}
+          onPress={() => setFilterType("toSeller")}
         >
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={styles.filterText}>
+            My Inquiries ({inquiriesToSeller.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterBtn, filterType === "fromBuyer" && styles.activeFilter]}
+          onPress={() => setFilterType("fromBuyer")}
+        >
+          <Text style={styles.filterText}>
+            Received Inquiries ({inquiriesFromBuyer.length})
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* App Version */}
-      <View style={styles.versionContainer}>
-        <Text style={styles.versionText}>MJVI Realty • Version 1.0.0</Text>
-      </View>
-    </ScrollView>
+      <FlatList
+        data={filterType === "toSeller" ? inquiriesToSeller : inquiriesFromBuyer}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        ListEmptyComponent={
+          <Text style={styles.noData}>No inquiries found.</Text>
+        }
+      />
+    </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    padding: 16,
+    backgroundColor: "#F4F7FA",
   },
-  profileHeader: {
-    backgroundColor: '#fff',
-    paddingTop: 32,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  profileImageContainer: {
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  userName: {
+  header: {
     fontSize: 28,
-    fontWeight: '600',
-    color: '#1c1c1e',
-    marginBottom: 4,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#1f2937",
   },
-  userEmail: {
-    fontSize: 17,
-    color: '#8e8e93',
-    marginBottom: 12,
-  },
-  membershipBadge: {
-    backgroundColor: '#5B7931',
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  item: {
+    backgroundColor: "#fff",
+    padding: 16,
     borderRadius: 12,
+    marginBottom: 14,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
   },
-  statsSection: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#8e8e93',
-    textTransform: 'uppercase',
-    marginLeft: 20,
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  statCard: {
-    flex: 1,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  statCardBorder: {
-    borderRightWidth: 0.5,
-    borderRightColor: '#d1d1d6',
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#5B7931',
+  title: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
     marginBottom: 4,
   },
-  statLabel: {
-    fontSize: 13,
-    color: '#8e8e93',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  menuSection: {
-    marginBottom: 32,
-  },
-  menuContainer: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#d1d1d6',
-    minHeight: 56,
-  },
-  lastMenuItem: {
-    borderBottomWidth: 0,
-  },
-  menuTitle: {
-    fontSize: 17,
-    color: '#1c1c1e',
-    fontWeight: '400',
-  },
-  menuArrow: {
-    fontSize: 20,
-    color: '#c7c7cc',
-    fontWeight: '300',
-  },
-  activitySection: {
-    marginBottom: 32,
-  },
-  activityContainer: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  activityItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#d1d1d6',
-    minHeight: 64,
-  },
-  lastActivityItem: {
-    borderBottomWidth: 0,
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityText: {
-    fontSize: 16,
-    color: '#1c1c1e',
-    fontWeight: '500',
+  subText: {
+    fontSize: 14,
+    color: "#4B5563",
     marginBottom: 2,
   },
-  activityLocation: {
+  statusValue: {
+    fontWeight: "600",
+    color: "#111",
+  },
+  bold: {
+    fontWeight: "bold",
+    color: "#1f2937",
+  },
+  image: {
+    width: "100%",
+    height: 180,
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  actionContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 10,
+  },
+  acceptBtn: {
+    backgroundColor: "#10B981",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  declineBtn: {
+    backgroundColor: "#EF4444",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  cancelBtn: {
+    backgroundColor: "#F59E0B",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  btnText: {
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 14,
-    color: '#8e8e93',
   },
-  activityTime: {
+  statusText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
+    paddingVertical: 4,
+  },
+  filterContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  filterBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  activeFilter: {
+    backgroundColor: "#60A5FA",
+  },
+  filterText: {
     fontSize: 14,
-    color: '#8e8e93',
-    fontWeight: '400',
+    fontWeight: "600",
+    color: "#1F2937",
   },
-  signOutSection: {
-    marginBottom: 32,
-  },
-  signOutButton: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    minHeight: 56,
-    justifyContent: 'center',
-  },
-  signOutText: {
-    color: '#ff3b30',
-    fontSize: 17,
-    fontWeight: '400',
-  },
-  versionContainer: {
-    alignItems: 'center',
-    paddingBottom: 48,
-  },
-  versionText: {
-    fontSize: 13,
-    color: '#8e8e93',
-    fontWeight: '400',
+  noData: {
+    textAlign: "center",
+    marginTop: 40,
+    fontSize: 16,
+    color: "#9CA3AF",
   },
 });

@@ -2,17 +2,24 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_SETTINGS = {
-  baseURL: 'http://192.168.0.105/api/',
+  baseURL: 'https://test.nutrisafari.xyz/api/',
+
   endpoints: {
     AUTH: 'sanctum/token',
     AGENT: 'agent',
     USER: 'agent/user',
     PROPERTIES: 'agent/properties',
-    STORAGE: 'http://192.168.0.105/storage',
+    STORAGE: 'https://test.nutrisafari.xyz/storage',
+
     LIST: 'agent/listing',
     INQUIRIES: 'agent/inquiries',
     INQUIRIES2: (id, action) => `agent/inquiries/${id}/${action}`,
-    PROPERTY_DETAIL: (id) => `agent/listing/${id}`
+    PROPERTY_DETAIL: (id) => `agent/listing/${id}`,
+    CHAT: 'agent/chat',
+    BROADCASTING_AUTH: 'broadcasting/auth',
+    CHANNEL: (channel) => `/chat/channels/${channel}`,
+    TRIPPING: 'agent/tripping',
+    TRIPPING2: (id, action) => `/tripping/${id}/${action}`,
   }
 };
 

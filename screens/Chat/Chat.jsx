@@ -1,171 +1,215 @@
-// import React, { useEffect, useState } from 'react';
-// import {
-//   View,
-//   Text,
-//   FlatList,
-//   TextInput,
-//   StyleSheet,
-//   Image,
-//   TouchableOpacity,
-// } from 'react-native';
-// import axiosConfig from '../../Helper/axiosConfig';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import axiosInstance, { API_ENDPOINTS } from '../../Helper/axiosConfig';
+import configureEcho from '../../Helper/echo';
 
-// export default function Chat({ navigation }) {
-//   const [chats, setChats] = useState([]);
-//   const [filteredChats, setFilteredChats] = useState([]);
-//   const [search, setSearch] = useState('');
+export default function Chat({ navigation }) {
+  const [chats, setChats] = useState([]);
+  const [filteredChats, setFilteredChats] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [echo, setEcho] = useState(null);
 
-//   useEffect(() => {
-//     fetchChat();
-//   }, []);
+  useEffect(() => {
+    const initEcho = async () => {
+      const echoInstance = await configureEcho();
+      setEcho(echoInstance);
+    };
+    
+    initEcho();
+    fetchChat();
 
-//   useEffect(() => {
-//     handleSearch(search);
-//   }, [search, chats]);
+    return () => {
+      if (echo) {
+        echo.disconnect();
+      }
+    };
+  }, []);
 
-//   const fetchChat = async () => {
-//     try {
-//       const response = await axiosConfig.get('/agent/chat');
-//       if (response.status === 200) {
-//         const data = response.data.data || [];
-//         setChats(data);
-//         setFilteredChats(data);
-//       }
-//     } catch (error) {
-//       console.error('Error loading chats:', error);
-//     }
-//   };
+  useEffect(() => {
+    handleSearch(search);
+  }, [search, chats]);
 
-//   const handleSearch = (text) => {
-//     setSearch(text);
-//     if (text.trim() === '') {
-//       setFilteredChats(chats);
-//     } else {
-//       const filtered = chats.filter((chat) =>
-//         chat.chatmate_name?.toLowerCase().includes(text.toLowerCase())
-//       );
-//       setFilteredChats(filtered);
-//     }
-//   };
+  const fetchChat = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(API_ENDPOINTS.CHAT);
+      if (response.status === 200) {
+        const data = response.data.data || [];
+        setChats(data);
+        setFilteredChats(data);
+      }
+    } catch (error) {
+      console.error('Error loading chats:', error);
+      Alert.alert('Error', 'Failed to load chats');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-//   const renderChatItem = ({ item }) => (
-//     <TouchableOpacity
-//       style={styles.chatCard}
-//       onPress={() => navigation.navigate('SingleChat', { chatId: item.channel_id })}
-//     >
-//       {item.chatmate_avatar ? (
-//         <Image source={{ uri: item.chatmate_avatar }} style={styles.avatar} />
-//       ) : (
-//         <View style={styles.fallbackAvatar}>
-//           <Text style={styles.fallbackText}>
-//             {item.chatmate_name?.charAt(0)?.toUpperCase() || 'U'} {item.id}
-//           </Text>
-//         </View>
-//       )}
-//       <View style={styles.chatInfo}>
-//         <Text style={styles.chatName}>{item.chatmate_name}</Text>
-//         <Text style={styles.chatMessage} numberOfLines={1}>
-//           {item.last_message || 'Start the conversation...'}
-//         </Text>
-//       </View>
-//     </TouchableOpacity>
-//   );
+  const handleSearch = (text) => {
+    setSearch(text);
+    if (text.trim() === '') {
+      setFilteredChats(chats);
+    } else {
+      const filtered = chats.filter((chat) =>
+        chat.chatmate_name?.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredChats(filtered);
+    }
+  };
 
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.header}>Messages</Text>
+  const renderChatItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.chatCard}
+      onPress={() => navigation.navigate('SingleChat', { 
+        channelId: item.channel_id,
+        chatmateName: item.chatmate_name,
+        chatmateAvatar: item.chatmate_avatar 
+      })}
+    >
+      {item.chatmate_avatar ? (
+        <Image source={{ uri: item.chatmate_avatar }} style={styles.avatar} />
+      ) : (
+        <View style={styles.fallbackAvatar}>
+          <Text style={styles.fallbackText}>
+            {item.chatmate_name?.charAt(0)?.toUpperCase() || 'U'}
+          </Text>
+        </View>
+      )}
+      <View style={styles.chatInfo}>
+        <Text style={styles.chatName}>{item.chatmate_name}</Text>
+        <Text style={styles.chatMessage} numberOfLines={1}>
+          {item.last_message || 'Start the conversation...'}
+        </Text>
+      </View>
+      <Text style={styles.lastActivity}>
+        {formatLastActivity(item.last_activity)}
+      </Text>
+    </TouchableOpacity>
+  );
 
-//       <TextInput
-//         style={styles.searchInput}
-//         placeholder="Search chatmate..."
-//         value={search}
-//         onChangeText={handleSearch}
-//       />
+  const formatLastActivity = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
-//       {filteredChats.length > 0 ? (
-//         <FlatList
-//           data={filteredChats}
-//           keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}          renderItem={renderChatItem}
-//           contentContainerStyle={styles.chatList}
-//         />
-//       ) : (
-//         <Text style={styles.emptyText}>No chats found.</Text>
-//       )}
-//     </View>
-//   );
-// }
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//     paddingHorizontal: 20,
-//     paddingTop: 60,
-//   },
-//   header: {
-//     fontSize: 26,
-//     fontWeight: 'bold',
-//     marginBottom: 20,
-//   },
-//   searchInput: {
-//     height: 45,
-//     borderColor: '#ddd',
-//     borderWidth: 1,
-//     borderRadius: 10,
-//     paddingHorizontal: 15,
-//     marginBottom: 15,
-//     fontSize: 16,
-//   },
-//   chatList: {
-//     paddingBottom: 20,
-//   },
-//   chatCard: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     padding: 15,
-//     borderRadius: 12,
-//     backgroundColor: '#f9f9f9',
-//     marginBottom: 10,
-//     elevation: 1,
-//   },
-//   avatar: {
-//     width: 50,
-//     height: 50,
-//     borderRadius: 25,
-//     marginRight: 15,
-//     backgroundColor: '#ddd',
-//   },
-//   fallbackAvatar: {
-//     width: 50,
-//     height: 50,
-//     borderRadius: 25,
-//     marginRight: 15,
-//     backgroundColor: '#999',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   fallbackText: {
-//     fontSize: 20,
-//     color: '#fff',
-//     fontWeight: 'bold',
-//   },
-//   chatInfo: {
-//     flex: 1,
-//     justifyContent: 'center',
-//   },
-//   chatName: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     marginBottom: 4,
-//   },
-//   chatMessage: {
-//     color: '#555',
-//     fontSize: 14,
-//   },
-//   emptyText: {
-//     textAlign: 'center',
-//     marginTop: 40,
-//     fontSize: 16,
-//     color: '#aaa',
-//   },
-// });
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Messages</Text>
+
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search chatmate..."
+        value={search}
+        onChangeText={handleSearch}
+      />
+
+      {filteredChats.length > 0 ? (
+        <FlatList
+          data={filteredChats}
+          keyExtractor={(item) => item.channel_id.toString()}
+          renderItem={renderChatItem}
+          contentContainerStyle={styles.chatList}
+          refreshing={loading}
+          onRefresh={fetchChat}
+        />
+      ) : (
+        <Text style={styles.emptyText}>No chats found.</Text>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+  },
+  header: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  searchInput: {
+    height: 45,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  chatList: {
+    paddingBottom: 20,
+  },
+  chatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 12,
+    backgroundColor: '#f9f9f9',
+    marginBottom: 10,
+    elevation: 1,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
+    backgroundColor: '#ddd',
+  },
+  fallbackAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
+    backgroundColor: '#999',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fallbackText: {
+    fontSize: 20,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  chatInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  chatName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  chatMessage: {
+    color: '#555',
+    fontSize: 14,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 16,
+    color: '#aaa',
+  },
+});

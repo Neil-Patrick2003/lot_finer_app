@@ -1,3 +1,6 @@
+if (typeof global.self === 'undefined') {
+  global.self = global;
+}
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -84,7 +87,7 @@ const TabNavigator = () => (
         ),
       }}
     />
-    {/* <Tab.Screen
+    <Tab.Screen
       name="Chat" // Corrected from "Triping" to "Tripping"
       component={Chat}
       options={{
@@ -92,7 +95,7 @@ const TabNavigator = () => (
           <Ionicons name="chatbubble-ellipses" size={size} color={color} />
         ),
       }}
-    /> */}
+    />
     <Tab.Screen
       name="Handle" // New Handle tab
       component={Handle}
