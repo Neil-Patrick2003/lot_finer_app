@@ -36,7 +36,7 @@ export default function PropertyDetails({ route }) {
     
     try {
       const response = await axiosInstance.post(
-        API_ENDPOINTS.propertyInquiry(property.id),
+        API_ENDPOINTS.PROPERTYLIST,
         { message: inquiryText }
       );
 

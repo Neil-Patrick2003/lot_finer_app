@@ -1,4 +1,3 @@
-// Me/PrivacyPolicy.jsx
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 
@@ -62,15 +61,19 @@ const PrivacyPolicy = () => {
             If you have any questions about this Privacy Policy, please contact us at:
           </Text>
           <Text style={styles.contactInfo}>
-            Email: support@mjvirealty.com{'\n'}
+            Email: support@mjvirealty.com
+          </Text>
+          <Text style={styles.contactInfo}>
             Phone: (123) 456-7890
           </Text>
         </View>
       </ScrollView>
-      <View style={styles.bottomMargin} /> {/* Added bottom margin */}
+      <View style={styles.bottomMargin} />
     </View>
   );
 };
+
+// ... (keep your existing StyleSheet code)
 
 const styles = StyleSheet.create({
   outerContainer: {

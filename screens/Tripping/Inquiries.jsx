@@ -8,12 +8,11 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
-import axiosConfig from "../../Helper/axiosConfig";
+import axiosInstance, { API_ENDPOINTS } from "../../Helper/axiosConfig";
 
 export default function Inquiries() {
   const [inquiries, setInquiries] = useState([]);
   const [filterType, setFilterType] = useState("toSeller");
-  const rootUrl = "http://192.168.254.106:8000";
 
   useEffect(() => {
     fetchInquiries();
@@ -21,7 +20,7 @@ export default function Inquiries() {
 
   const fetchInquiries = async () => {
     try {
-      const response = await axiosConfig.get("/agent/inquiries");
+      const response = await axiosInstance.get(API_ENDPOINTS.INQUIRIES); // Replace with API_ENDPOINTS.INQUIRIES when ready
       if (response.status === 200) {
         setInquiries(response.data.data || []);
       }
@@ -41,7 +40,7 @@ export default function Inquiries() {
           text: "Yes",
           onPress: async () => {
             try {
-              const response = await axiosConfig.put(`/agent/inquiries/${id}/${action}`);
+              const response = await axiosInstance.put(API_ENDPOINTS.INQUIRIES2);
               if (response.status === 200) {
                 Alert.alert("Success", `Inquiry ${action}ed successfully.`);
                 fetchInquiries();
@@ -85,7 +84,7 @@ export default function Inquiries() {
 
         {item.property?.image_url && (
           <Image
-            source={{ uri: `${rootUrl}/storage/${item.property.image_url}` }}
+            source={{ uri: `${API_ENDPOINTS.STORAGE}/${item.property.image_url}` }}
             style={styles.image}
           />
         )}
